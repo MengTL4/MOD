@@ -12,6 +12,10 @@
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <!-- 游戏安装目录，可通过 msbuild /p:GameDir=... 或环境变量 GameDir 覆盖 -->
+    <GameDir Condition=" '$(GameDir)' == '' ">..\..\Steam\steamapps\common\DICEOMANCER</GameDir>
+    <GameManagedDir>$(GameDir)\Diceomancer_Data\Managed</GameManagedDir>
+    <BepInExCoreDir>$(GameDir)\BepInEx\core</BepInExCoreDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -32,19 +36,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>$(BepInExCoreDir)\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(GameManagedDir)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx.Core">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\BepInEx\core\BepInEx.Core.dll</HintPath>
+      <HintPath>$(BepInExCoreDir)\BepInEx.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx.Unity.Mono">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\BepInEx\core\BepInEx.Unity.Mono.dll</HintPath>
+      <HintPath>$(BepInExCoreDir)\BepInEx.Unity.Mono.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System">
@@ -72,37 +76,52 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="UniTask">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\UniTask.dll</HintPath>
+      <HintPath>$(GameManagedDir)\UniTask.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Localization">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\Unity.Localization.dll</HintPath>
+      <HintPath>$(GameManagedDir)\Unity.Localization.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(GameManagedDir)\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(GameManagedDir)\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(GameManagedDir)\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(GameManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(GameManagedDir)\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\Steam\steamapps\common\DICEOMANCER\Diceomancer_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>$(GameManagedDir)\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="CheatActions.cs" />
+    <Compile Include="CheatMenuWindow.cs" />
+    <Compile Include="CheatPatches.cs" />
+    <Compile Include="CheatSettings.cs" />
+    <Compile Include="FilteredListView.cs" />
+    <Compile Include="MenuStyles.cs" />
+    <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- 编译成功后，如果检测到游戏已安装 BepInEx，自动复制插件到 BepInEx\plugins -->
+  <Target Name="CopyToGamePlugins" AfterTargets="Build" Condition="Exists('$(GameDir)\BepInEx\plugins')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="已复制 $(TargetFileName) 到 $(GameDir)\BepInEx\plugins" />
+  </Target>
 </Project>
