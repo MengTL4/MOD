@@ -27,7 +27,7 @@
 - BepInEx.Core.dll
 - BepInEx.Unity.dll
 
-![](https://github.com/MengTL4/GaiaTrekCheatMenu/blob/main/menu.png)
+![](menu.png)
 
 更多功能待添加。。。
 
