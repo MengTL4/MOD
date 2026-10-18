@@ -1,0 +1,61 @@
+[h1]AI 托管主角 —— 让队友 AI 替你打一回合[/h1]
+
+游戏里队友有自动化 AI，主角却没有。这个 MOD 在动作面板加了一个[b]机器人按钮[/b]，点一下就让游戏自带的队友 AI 接管主角行动一回合，行动完自动结束回合；也可以开启持续托管，每回合自动进行。
+
+[h2]⚠ 需要手动安装（订阅后不会自动生效）[/h2]
+游戏的创意工坊模组只支持数据（JSON/图片），不会执行代码，所以本 MOD 需要运行一次安装程序。[b]游戏内模组管理器里的开关对本 MOD 无效。[/b]
+
+[list]
+[*]订阅本 MOD，等 Steam 下载完成，[b]退出游戏[/b]。
+[*]打开 MOD 下载目录：[b]<你的 Steam 库>\steamapps\workshop\content\1534980\3821926212[/b]
+  找法：Steam 库里右键游戏 → 管理 → 浏览本地文件，向上退两级到 steamapps，再进 workshop\content\1534980。
+[*]双击 [b]install.bat[/b]，看到“安装完成”就行。[b]不需要安装 Python。[/b]
+[/list]
+安装程序会自动找到游戏目录（找不到会弹窗让你选），把 MOD 复制到 <游戏目录>\ai_takeover，并先校验游戏版本——不匹配就不会改动任何游戏文件。
+
+[h2]用法[/h2]
+[table]
+[tr][th]操作[/th][th]效果[/th][/tr]
+[tr][td]左键按钮 / F6[/td][td]AI 托管本回合，行动完自动结束回合[/td][/tr]
+[tr][td]Shift + F6[/td][td]开启持续托管（每回合自动托管）[/td][/tr]
+[tr][td]持续托管中点按钮 / F6[/td][td]停止持续托管[/td][/tr]
+[tr][td]右键按钮[/td][td]菜单：托管本回合 / 持续托管 / AI 行为设置[/td][/tr]
+[/table]
+
+[b]AI 会做的事[/b]（和队友 AI 完全相同的逻辑与优先级）：用药治疗 → 安全时睡觉 → 攻击僵尸/敌对 NPC → 修车 → 清理障碍 → 搜刮、捡有价值的物品 → 继续制作/升级 → 读书、听音乐 → 缝补、修理 → 种田 → 按需吃喝。
+[b]不会做的事[/b]：换地图、开车、与 NPC 交易等需要你决策的操作。
+
+[b]AI 行为设置[/b]打开的是游戏原生的队友自动化设置面板，只对主角生效：可以单独开关攻击、搜尸体、吃生肉/变质食物、喝脏水、睡觉、读书、种田、捡物品的价值/重量阈值等（面板顶部的总开关对主角无效）。
+持续托管时 HP 低于 35% 自动停止；弹出升级、对话等窗口时会暂停。
+
+[h2]更新 / 卸载[/h2]
+[list]
+[*][b]MOD 更新或游戏更新后[/b]：再双击一次 install.bat。若提示“Python 运行库不匹配”，说明游戏升级了内置 Python，请等待 MOD 更新。
+[*][b]卸载[/b]：双击 uninstall.bat（游戏恢复原样），再取消订阅。也可以在 Steam 里“验证游戏文件的完整性”后删除 <游戏目录>\ai_takeover。
+[/list]
+
+[h2]原理[/h2]
+安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库模块 linecache.pyc，换成“原样执行原代码 + 加载 ai_takeover.py”的版本，原文件备份在 <游戏目录>\ai_takeover\backup。MOD 源码（ai_takeover.py）是明文，可以直接查看。单机游戏，不影响存档，卸载后存档照常可用。出错时游戏不会崩溃，错误写在 <游戏目录>\ai_takeover\ai_takeover.log，反馈问题请附上。
+
+非官方 MOD，与开发商无关。
+
+[hr][/hr]
+
+[h1]AI Takeover for your main character[/h1]
+Adds a robot button to the action panel: the game's own companion AI plays your main character for one turn (or every turn in continuous mode).
+
+[h2]⚠ Manual install required[/h2]
+Workshop mods for this game can only contain data, so the game never runs this mod by itself, and its switch in the in-game mod manager does nothing.
+[list]
+[*]Subscribe, wait for the download, [b]quit the game[/b].
+[*]Open [b]<Steam library>\steamapps\workshop\content\1534980\3821926212[/b].
+[*]Double-click [b]install.bat[/b]. No Python needed. It finds the game, copies the mod to <game>\ai_takeover and checks the game version first.
+[/list]
+
+[h2]Use[/h2]
+Left-click / F6: AI plays this turn. Shift+F6: continuous takeover; click or F6 again to stop. Right-click: menu incl. AI behavior settings (the game's companion automation panel, applied to your character).
+The AI never changes maps, drives or trades. Continuous mode stops below 35% HP.
+
+[h2]Update / uninstall[/h2]
+After a mod or game update, run install.bat again. To remove, run uninstall.bat, then unsubscribe (or verify game files in Steam and delete <game>\ai_takeover).
+The installer changes only linecache.pyc inside <game>\_internal\base_library.zip and keeps a backup. Unofficial mod.

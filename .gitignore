@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+!**/payload/*.pyc
+*.log
+backup/
+workshop_item.json
