@@ -1,0 +1,9 @@
+{
+  "pistol_desc": "可进行远距离攻击。<i>命中率</i>随射程变近而提高，随射程变远而降低。使用9mm子弹。",
+  "revolver_desc": "可进行远距离攻击。<i>命中率</i>随射程变近而提高，随射程变远而降低。使用9mm子弹。",
+  "rifle_desc": "可进行远距离攻击。<i>命中率</i>随射程变近而提高，随射程变远而降低。使用子弹（7.62）。",
+  "lc_9mm_ammo": "9mm子弹",
+  "lc_9mm_ammo_desc": "手枪和左轮手枪使用的9mm子弹。",
+  "lc_shotgun_shell_ammo": "霰弹",
+  "lc_shotgun_shell_ammo_desc": "霰弹枪使用的霰弹。"
+}

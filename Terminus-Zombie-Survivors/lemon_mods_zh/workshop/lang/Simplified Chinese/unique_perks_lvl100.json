@@ -1,0 +1,20 @@
+{
+  "perk_lc_athlete_inf": "活力源泉（运动员）",
+  "perk_lc_athlete_inf_desc": "每回合额外获得<color=GREEN>{num}</color> AP",
+  "perk_lc_chef_inf": "大厨菜肴（厨师）",
+  "perk_lc_chef_inf_desc": "烹饪成果的饱腹感随等级提升（150%、175%、200%、250%）",
+  "perk_lc_construction_worker_inf": "力大无穷（建筑工人）",
+  "perk_lc_construction_worker_inf_desc": "忽略<color=GREEN>{num}</color>负重",
+  "perk_lc_farmer_inf": "农民之手（农民）",
+  "perk_lc_farmer_inf_desc": "农田作物收获量<color=GREEN>+{num}%</color>",
+  "perk_lc_police_officer_inf": "命中（警察）",
+  "perk_lc_police_officer_inf_desc": "使用枪械时命中率<color=GREEN>+{num}%</color>",
+  "perk_lc_security_guard_inf": "夜间警戒（保安）",
+  "perk_lc_security_guard_inf_desc": "夜间视野<color=GREEN>+{num}</color>",
+  "perk_lc_soldier_inf": "战斗本能（军人）",
+  "perk_lc_soldier_inf_desc": "近战攻击伤害<color=GREEN>+{num}%</color>",
+  "perk_lc_student_review_inf": "复习（学生）",
+  "perk_lc_student_review_inf_desc": "每本书可以多读<color=GREEN>{num}</color>次",
+  "perk_lc_student_speed_inf": "速读（学生）",
+  "perk_lc_student_speed_inf_desc": "阅读速度<color=GREEN>+{num}%</color>"
+}

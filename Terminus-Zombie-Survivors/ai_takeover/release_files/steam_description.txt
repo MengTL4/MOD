@@ -7,7 +7,7 @@
 
 [list]
 [*]订阅本 MOD，等 Steam 下载完成，[b]退出游戏[/b]。
-[*]打开 MOD 下载目录：[b]<你的 Steam 库>\steamapps\workshop\content\1534980\3821926212[/b]
+[*]打开 MOD 下载目录：[b]<你的 Steam 库>\steamapps\workshop\content\1534980\__ITEM_ID__[/b]
   找法：Steam 库里右键游戏 → 管理 → 浏览本地文件，向上退两级到 steamapps，再进 workshop\content\1534980。
 [*]双击 [b]install.bat[/b]，看到“安装完成”就行。[b]不需要安装 Python。[/b]
 [/list]
@@ -31,11 +31,11 @@
 [h2]更新 / 卸载[/h2]
 [list]
 [*][b]MOD 更新或游戏更新后[/b]：再双击一次 install.bat。若提示“Python 运行库不匹配”，说明游戏升级了内置 Python，请等待 MOD 更新。
-[*][b]卸载[/b]：双击 uninstall.bat（游戏恢复原样），再取消订阅。也可以在 Steam 里“验证游戏文件的完整性”后删除 <游戏目录>\ai_takeover。
+[*][b]卸载[/b]：双击 uninstall.bat（没有其他 MOD 在用时游戏恢复原样），再取消订阅。也可以在 Steam 里“验证游戏文件的完整性”后删除 <游戏目录>\ai_takeover。
 [/list]
 
 [h2]原理[/h2]
-安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库模块 linecache.pyc，换成“原样执行原代码 + 加载 ai_takeover.py”的版本，原文件备份在 <游戏目录>\ai_takeover\backup。MOD 源码（ai_takeover.py）是明文，可以直接查看。单机游戏，不影响存档，卸载后存档照常可用。出错时游戏不会崩溃，错误写在 <游戏目录>\ai_takeover\ai_takeover.log，反馈问题请附上。
+安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库模块 linecache.pyc，换成“原样执行原代码 + MOD 加载器”的版本；安装包自带原始文件，卸载时用它还原。MOD 加载器与[b]队伍背包共享[/b]等 MOD 共用，可以同时安装。MOD 源码（ai_takeover.py）是明文，可以直接查看。单机游戏，不影响存档，卸载后存档照常可用。出错时游戏不会崩溃，错误写在 <游戏目录>\ai_takeover\ai_takeover.log，反馈问题请附上。
 
 非官方 MOD，与开发商无关。
 
@@ -48,7 +48,7 @@ Adds a robot button to the action panel: the game's own companion AI plays your 
 Workshop mods for this game can only contain data, so the game never runs this mod by itself, and its switch in the in-game mod manager does nothing.
 [list]
 [*]Subscribe, wait for the download, [b]quit the game[/b].
-[*]Open [b]<Steam library>\steamapps\workshop\content\1534980\3821926212[/b].
+[*]Open [b]<Steam library>\steamapps\workshop\content\1534980\__ITEM_ID__[/b].
 [*]Double-click [b]install.bat[/b]. No Python needed. It finds the game, copies the mod to <game>\ai_takeover and checks the game version first.
 [/list]
 
@@ -58,4 +58,4 @@ The AI never changes maps, drives or trades. Continuous mode stops below 35% HP.
 
 [h2]Update / uninstall[/h2]
 After a mod or game update, run install.bat again. To remove, run uninstall.bat, then unsubscribe (or verify game files in Steam and delete <game>\ai_takeover).
-The installer changes only linecache.pyc inside <game>\_internal\base_library.zip and keeps a backup. Unofficial mod.
+The installer changes only linecache.pyc inside <game>\_internal\base_library.zip (a small mod loader shared with other mods such as Shared Party Inventory) and ships the original to restore it. Unofficial mod.

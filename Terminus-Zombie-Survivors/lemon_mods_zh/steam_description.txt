@@ -1,0 +1,42 @@
+[h1]LemonCitrine 全系列 MOD · 简体中文汉化合集[/h1]
+本 MOD 是作者 LemonCitrine [url=https://steamcommunity.com/workshop/filedetails/?id=3760852788]全部 MOD[/url] 的[b]简体中文翻译合集[/b]，只包含文本，不改动任何游戏数据。
+
+[b]使用方法：[/b]
+[list]
+[*]订阅本合集，再订阅你想玩的 LemonCitrine 原版 MOD。装了哪些原版 MOD 就汉化哪些，没装的不会有任何影响。
+[*]在模组管理器中启用本合集，加载顺序没有要求。
+[*]游戏语言设置为简体中文即可。
+[/list]
+
+[h2]汉化内容[/h2]
+[list]
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3753067305]Cheat Traits[/url] 作弊属性：24 个属性
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3753289073]Challenge Traits[/url] 挑战属性：19 个属性
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3757192262]Infinite Perks Pack[/url] 无限技能：6 个技能
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789397954]Unique Perks for Everyone[/url] 全职业固有技能：13 个技能
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3811125649]Unique Perks for Everyone- Level 100![/url] 全职业固有技能（100级版）：9 个技能
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3762726963]Swords[/url] 长剑
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763021505]Ammo Types[/url] 弹药类型：9mm子弹、霰弹，以及手枪/左轮/步枪的说明
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3757710534]Lemon's Edits[/url]：以上全部内容的整合包，同样适用
+[/list]
+作者的其他 MOD（属性上限、载具、配方、雨水收集器、帐篷、石头等）只改数值或使用原版物品，本身没有新文本，游戏里本来就是中文，无需汉化。
+
+[b]翻译说明：[/b]
+[list]
+[*]术语与游戏官方中文保持一致（属性、属性点数、饱腹感、固有技能等）；固有技能名称后标注了原职业，例如「活力源泉（运动员）」。
+[*]作弊属性的说明已按实际数值校对过，修正了原版英文说明中与实际效果不符的地方（例如：全员到齐受游戏限制最多 +10 名队友；解剖额外物品上限 20），并补上了原版缺失的「全员到齐」说明。
+[*]Ammo Types 会修改原版霰弹枪和突击步枪的说明。为了不影响没装 Ammo Types 的玩家，这两条保持原版中文，不做覆盖。
+[/list]
+
+[h2]全员到齐 已知问题（来自原作者）[/h2]
+[list]
+[*]乘坐载有 6 名以上角色的车辆时游戏会崩溃。
+[*]队伍人数降到原版上限 5 人以下之前无法招募新队友。
+[*]需要先选择一个原版的队友相关技能，才能编辑最多 12 名队友。
+[/list]
+
+所有 MOD 的设计和数据归原作者 LemonCitrine 所有，请去原版页面点赞支持！
+如果原作者对本汉化有任何异议，我会立即下架。
+
+[hr][/hr]
+[b]English:[/b] Simplified Chinese translation pack for [url=https://steamcommunity.com/workshop/filedetails/?id=3760852788]all of LemonCitrine's mods[/url] (Cheat Traits, Challenge Traits, Infinite Perks Pack, Unique Perks for Everyone incl. Level 100, Swords, Ammo Types, Lemon's Edits). Translation only: subscribe to whichever original mods you want, and this pack translates them. All credit goes to the original author. If the author objects, I will take this down.

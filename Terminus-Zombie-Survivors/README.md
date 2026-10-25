@@ -1,66 +1,51 @@
 # Terminus: Zombie Survivors
 
-## AI 托管主角（ai_takeover）
+| MOD | 类型 | 创意工坊 | 说明 |
+|---|---|---|---|
+| [AI 托管主角](ai_takeover/README.md)（`ai_takeover`） | Python 注入 | [3821926212](https://steamcommunity.com/sharedfiles/filedetails/?id=3821926212) | 一键让游戏自带的队友 AI 接管主角行动一回合，支持持续托管 |
+| [队伍背包共享](shared_inventory/README.md)（`shared_inventory`） | Python 注入 | [3825232685](https://steamcommunity.com/sharedfiles/filedetails/?id=3825232685) | 主角和队友的背包合并成一个，制作、烹饪、用药、队友 AI 都从全队物品里找 |
+| [LemonCitrine 全系列 MOD 汉化](lemon_mods_zh/README.md)（`lemon_mods_zh`） | 官方数据 MOD | [3826727240](https://steamcommunity.com/sharedfiles/filedetails/?id=3826727240) | 作者 LemonCitrine 所有 MOD 的简体中文翻译合集 |
 
-游戏里队友有自动化 AI，主角却没有。这个 MOD 在动作面板加了一个机器人按钮，让游戏自带的队友 AI 接管主角：
+两个 Python 注入 MOD 可以同时使用。各自的用法、配置、排错见各目录的 README。
 
-| 操作 | 效果 |
-|---|---|
-| 左键按钮 / `F6` | AI 托管本回合，行动完自动结束回合 |
-| `Shift+F6` | 开启持续托管（每回合自动托管） |
-| 持续托管中点按钮 / `F6` | 停止 |
-| 右键按钮 | 菜单：托管本回合 / 持续托管 / AI 行为设置 |
+## 玩家安装（Python 注入 MOD）
 
-AI 的逻辑和队友完全一样：用药 → 安全时睡觉 → 攻击僵尸/敌对 NPC → 修车 → 清障碍 → 搜刮捡物 → 继续制作/升级 → 读书、听音乐 → 缝补、修理 → 种田 → 按需吃喝。不会换地图、开车或交易。
-「AI 行为设置」是游戏原生的队友自动化设置面板，只对主角生效。持续托管时 HP 低于 35% 自动停止。
+游戏官方的创意工坊模组只支持 JSON/图片，不执行代码，所以这两个 MOD 需要手动运行一次安装器，模组管理器里的开关对它们无效。
 
-### 玩家安装
-
-- **Steam 创意工坊**：[订阅](https://steamcommunity.com/sharedfiles/filedetails/?id=3821926212)后退出游戏，打开
-  `<Steam 库>\steamapps\workshop\content\1534980\3821926212`，双击 `install.bat`。
+- **Steam 创意工坊**：订阅后退出游戏，打开 `<Steam 库>\steamapps\workshop\content\1534980\<条目编号>`，双击 `install.bat`。
 - **手动**：用 `build_release.py` 生成的 zip，解压到任意位置，双击 `install.bat`。
 
 不需要 Python。安装器会自动找到游戏目录、先校验游戏版本再改动；卸载双击 `uninstall.bat`。
-游戏或 MOD 更新后重新运行一次 `install.bat`。详见 [使用说明.txt](ai_takeover/release_files/使用说明.txt) / [README_EN.txt](ai_takeover/release_files/README_EN.txt)。
+游戏或 MOD 更新后重新运行一次 `install.bat`。
 
-### 原理
+## 原理：共用的 MOD 加载器
 
-游戏是 PyInstaller 打包的 Python 3.12 程序，官方创意工坊模组只支持 JSON/图片，不执行代码。
+游戏是 PyInstaller 打包的 Python 3.12 程序，游戏逻辑是 `Terminus.exe` 里 PYZ 中的普通字节码。
 
-1. 安装器把 `_internal\base_library.zip` 里的标准库 `linecache.pyc` 换成「原样执行原字节码 + 安装一个导入钩子」的版本（原文件备份到 `<游戏目录>\ai_takeover\backup`）。
-2. 游戏导入 `ui.panels.actionpanel` / `scenes.main` 时，钩子加载 `<游戏目录>\ai_takeover\ai_takeover.py`，给动作面板加按钮、给主场景加热键。
-3. 点击按钮后在回合线程里复用 `actions/compaction.py` 的队友 AI 子任务控制主角，再调用游戏原本的结束回合流程。
+1. 安装器把 `_internal\base_library.zip` 里的标准库 `linecache.pyc` 换成「原样执行原字节码 + 一个 MOD 加载器」的版本（标记 `TERMINUS_AI_TAKEOVER_BOOTSTRAP_V2_MODLOADER`）。
+2. 加载器加载游戏目录下所有 `<名字>\<名字>.py` 形式的 MOD，读取 MOD 的 `PATCH_TARGETS`，在这些游戏模块导入完成后调用 `on_module_loaded(name, module)` 给游戏类打补丁。
+3. MOD 目录里有 `DISABLED` 文件时跳过该 MOD。卸载时如果还有别的 MOD 在用加载器，只生成 `DISABLED`；最后一个卸载的 MOD 用安装包里的原版 `linecache.pyc`（SHA256 校验过）还原游戏。
 
-出错时不会让游戏崩溃，错误写在 `<游戏目录>\ai_takeover\ai_takeover.log`。
+**新 MOD 的安装器必须装这个 V2 加载器**，不能另写只加载自己的引导代码，否则会把其他 MOD 顶掉。
+两个 MOD 的 `release_files/install.ps1` 是同一个模板，修改时保持一致。
 
-### 目录
+出错时不会让游戏崩溃，错误写在 `<游戏目录>\<MOD>\<MOD>.log`。
 
-```
-ai_takeover/
-├── ai_takeover.py        MOD 本体（按钮、热键、AI 驱动），开头几项可配置
-├── install.py            开发用安装/卸载（需 Python 3.12），直接在游戏里改 base_library.zip
-├── install.bat           调用 install.py
-├── uninstall.bat
-├── build_release.py      生成免 Python 的发布内容（创意工坊上传目录 + zip）
-└── release_files/        发布素材
-    ├── install.ps1       玩家用安装器（PowerShell，自动找游戏目录、校验、备份、复制）
-    ├── install.bat / uninstall.bat
-    ├── manifest.json     创意工坊 manifest（描述 ≤1000 字，会显示在游戏模组管理器）
-    ├── steam_description.txt  创意工坊页面描述（BBCode）
-    ├── preview.png
-    └── 使用说明.txt / README_EN.txt
-```
-
-### 开发与发布
+## 开发与发布
 
 需要 Python 3.12（与游戏内置版本一致，字节码才兼容），例如 `uv`：
 
-1. 把 `ai_takeover` 文件夹放到游戏根目录（和 `Terminus.exe` 同级）。
-2. 开发时安装：`uv run --no-project --python 3.12 install.py`（`--status` 查看、`--uninstall` 卸载）。改完 `ai_takeover.py` 重启游戏即生效。
-3. 生成发布内容：`uv run --no-project --python 3.12 build_release.py`，输出
-   - `<游戏目录>\ai_takeover_workshop\`：创意工坊上传目录（可用游戏自带的 `_internal\workshop_uploader\WorkshopUploader.exe` 上传；目录里的 `workshop_item.json` 记录条目编号，保留它才会更新同一个条目）
-   - `<游戏目录>\ai_takeover_release\TerminusAITakeover_v<版本>.zip`
+1. 把 MOD 文件夹放到游戏根目录（和 `Terminus.exe` 同级）。
+2. 开发时安装：`uv run --no-project --python 3.12 install.py`（`--status` 查看、`--uninstall` 卸载）。改完 `<MOD>.py` 重启游戏即生效。
+3. 改 `build_release.py` 里的 `VERSION`，生成发布内容：`uv run --no-project --python 3.12 build_release.py`，输出
+   - `<游戏目录>\<MOD>_workshop\`：创意工坊上传目录（目录里的 `workshop_item.json` 记录条目编号，保留它才会更新同一个条目）
+   - `<游戏目录>\<MOD>_release\<名字>_v<版本>.zip`
+4. `release_files` 里的占位符在构建时填入：`__VERSION__`、`__ORIG_SHA256__`、`__ITEM_ID__`、`__MOD__`、`__MOD_TITLE__`、`__DONE_MSG__`。
 
 预编译的 `payload\linecache.pyc` 内嵌了游戏原始的 `linecache.pyc`，玩家端安装器会用 SHA256 校验游戏里的原文件，游戏升级内置 Python 后需要重新运行 `build_release.py` 出新包。
+
+上传时建议用游戏自带的 steamworks 绑定调用 `CreateItem` / `SubmitItemUpdate`（参考 [lemon_mods_zh/publish.py](lemon_mods_zh/publish.py)），页面描述取自 `steam_description.txt`。
+游戏自带的 `_internal\workshop_uploader\WorkshopUploader.exe` 会用 `manifest.description` 覆盖页面上的长描述。
+刚上传后页面会显示「隐藏」，那是 Steam 在审核；审核期间再提交更新会在提交时报 `ACCESS_DENIED`，等审核结束再传即可。
 
 适配版本：游戏 1.3.2.12（Python 3.12）。非官方 MOD，与开发商无关。
