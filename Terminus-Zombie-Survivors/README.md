@@ -4,13 +4,14 @@
 |---|---|---|---|
 | [AI 托管主角](ai_takeover/README.md)（`ai_takeover`） | Python 注入 | [3821926212](https://steamcommunity.com/sharedfiles/filedetails/?id=3821926212) | 一键让游戏自带的队友 AI 接管主角行动一回合，支持持续托管 |
 | [队伍背包共享](shared_inventory/README.md)（`shared_inventory`） | Python 注入 | [3825232685](https://steamcommunity.com/sharedfiles/filedetails/?id=3825232685) | 主角和队友的背包合并成一个，制作、烹饪、用药、队友 AI 都从全队物品里找 |
+| [队友 AI 加强](companion_ai/README.md)（`companion_ai`） | Python 注入 | [3826759381](https://steamcommunity.com/sharedfiles/filedetails/?id=3826759381) | 队友低血量撤退、按期望伤害选部位/武器/目标、集火、不乱开枪、互相治疗、护卫、捡弹药和药品 |
 | [LemonCitrine 全系列 MOD 汉化](lemon_mods_zh/README.md)（`lemon_mods_zh`） | 官方数据 MOD | [3826727240](https://steamcommunity.com/sharedfiles/filedetails/?id=3826727240) | 作者 LemonCitrine 所有 MOD 的简体中文翻译合集 |
 
-两个 Python 注入 MOD 可以同时使用。各自的用法、配置、排错见各目录的 README。
+三个 Python 注入 MOD 可以同时使用。各自的用法、配置、排错见各目录的 README。
 
 ## 玩家安装（Python 注入 MOD）
 
-游戏官方的创意工坊模组只支持 JSON/图片，不执行代码，所以这两个 MOD 需要手动运行一次安装器，模组管理器里的开关对它们无效。
+游戏官方的创意工坊模组只支持 JSON/图片，不执行代码，所以这些 MOD 需要手动运行一次安装器，模组管理器里的开关对它们无效。
 
 - **Steam 创意工坊**：订阅后退出游戏，打开 `<Steam 库>\steamapps\workshop\content\1534980\<条目编号>`，双击 `install.bat`。
 - **手动**：用 `build_release.py` 生成的 zip，解压到任意位置，双击 `install.bat`。
@@ -27,7 +28,7 @@
 3. MOD 目录里有 `DISABLED` 文件时跳过该 MOD。卸载时如果还有别的 MOD 在用加载器，只生成 `DISABLED`；最后一个卸载的 MOD 用安装包里的原版 `linecache.pyc`（SHA256 校验过）还原游戏。
 
 **新 MOD 的安装器必须装这个 V2 加载器**，不能另写只加载自己的引导代码，否则会把其他 MOD 顶掉。
-两个 MOD 的 `release_files/install.ps1` 是同一个模板，修改时保持一致。
+各 MOD 的 `release_files/install.ps1` 是同一个模板，修改时保持一致。
 
 出错时不会让游戏崩溃，错误写在 `<游戏目录>\<MOD>\<MOD>.log`。
 
@@ -51,6 +52,10 @@
 
    [`tools/workshop_upload.py`](tools/workshop_upload.py) 直接从 `Terminus.exe` 里取游戏自带的 steamworks 绑定，上传 `<MOD>_workshop\`，
    页面描述取自 `build_release.steam_description()`；标题、标签、可见性保持不变。上传前会检查上传目录的版本和 `VERSION` 一致。
+
+   新 MOD 第一次发布：先 `workshop_upload.py <MOD> --create` 建条目（编号写进 `<MOD>_workshop\workshop_item.json`），
+   再运行一次 `build_release.py` 把说明里的条目编号填上，最后 `workshop_upload.py <MOD> "首次发布" --public`，
+   按 `build_release.py` 里的 `WORKSHOP_TITLE` / `WORKSHOP_TAGS` 设置标题和标签并设为公开。
    汉化合集的 [`lemon_mods_zh/publish.py`](lemon_mods_zh/publish.py) 也用它。
 
 预编译的 `payload\linecache.pyc` 内嵌了游戏原始的 `linecache.pyc`，玩家端安装器会用 SHA256 校验游戏里的原文件，游戏升级内置 Python 后需要重新运行 `build_release.py` 出新包。

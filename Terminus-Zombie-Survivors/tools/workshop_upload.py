@@ -14,6 +14,12 @@ Steam 处于运行并登录条目所有者的账号。本文件夹要放在游�
 上传 <游戏目录>\<MOD>_workshop\，页面描述取自 build_release.steam_description()（release_files\steam_description.txt
 填好占位符）。标题、标签、可见性保持条目上现有的设置。
 
+新 MOD 第一次发布：
+    ...\workshop_upload.py <MOD 名> --create          建条目，编号写进 <MOD>_workshop\workshop_item.json
+    （再运行一次 build_release.py，把说明文字里的条目编号填上）
+    ...\workshop_upload.py <MOD 名> "首次发布" --public
+--public 时按 build_release.py 里的 WORKSHOP_TITLE / WORKSHOP_TAGS 设置标题和标签，并设为公开。
+
 不要用游戏自带的 WorkshopUploader，它会用 manifest.description 覆盖页面上的长描述。
 """
 
@@ -107,14 +113,29 @@ class Workshop:
             if time.time() > end:
                 sys.exit(what + ": timed out")
 
-    def submit(self, item_id, content, preview, description, change_note, title=None, tags=None):
-        """更新条目的内容、预览图、描述；title / tags 为 None 时保持不变。"""
+    def create(self):
+        """新建一个空的社区条目，返回编号。"""
+        from steamworks.enums import EWorkshopFileType
+        box = {}
+        self.sw.Workshop.CreateItem(APP_ID, EWorkshopFileType(0), lambda r: box.setdefault("r", r))
+        self._wait(lambda: "r" in box, "CreateItem", 120)
+        r = box["r"]
+        print("CreateItem result:", r.result, "needs agreement:", r.userNeedsToAcceptWorkshopLegalAgreement)
+        if r.result != 1:
+            sys.exit("CreateItem failed")
+        return int(r.publishedFileId)
+
+    def submit(self, item_id, content, preview, description, change_note, title=None, tags=None, public=False):
+        """更新条目的内容、预览图、描述；title / tags 为 None 时保持不变，public 时设为公开。"""
         ws = self.sw.Workshop
         h = ws.StartItemUpdate(APP_ID, item_id)
         if title is not None:
             ws.SetItemTitle(h, title)
         if tags is not None:
             ws.SetItemTags(h, tags)
+        if public:
+            from steamworks.enums import ERemoteStoragePublishedFileVisibility
+            ws.SetItemVisibility(h, ERemoteStoragePublishedFileVisibility(0))
         ws.SetItemDescription(h, description)
         ws.SetItemContent(h, os.path.abspath(content))
         ws.SetItemPreview(h, os.path.abspath(preview))
@@ -170,13 +191,31 @@ class Workshop:
         return sorted(current)
 
 
-def upload_code_mod(mod, change_note):
-    """含代码的 MOD：上传 build_release.py 生成的 <MOD>_workshop 目录。"""
+def load_build(mod):
     mod_dir = os.path.join(GAME, mod)
     sys.path.insert(0, mod_dir)
     spec = importlib.util.spec_from_file_location("build_release", os.path.join(mod_dir, "build_release.py"))
     build = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(build)
+    return build
+
+
+def create_code_mod(mod):
+    """新 MOD：建条目，编号写进 <MOD>_workshop\\workshop_item.json。"""
+    build = load_build(mod)
+    if str(build.item_id()).isdigit():
+        sys.exit("%s 已有条目 %s" % (mod, build.item_id()))
+    ws = Workshop()
+    item_id = ws.create()
+    os.makedirs(build.WORKSHOP_DIR, exist_ok=True)
+    with open(build.ITEM_FILE, "w", encoding="utf-8") as f:
+        json.dump({"published_file_id": item_id, "owner_steam_id": str(ws.steam_id)}, f)
+    print("新条目 %s，已写入 %s。再运行一次 build_release.py，然后带 --public 上传。" % (item_id, build.ITEM_FILE))
+
+
+def upload_code_mod(mod, change_note, public=False):
+    """含代码的 MOD：上传 build_release.py 生成的 <MOD>_workshop 目录。"""
+    build = load_build(mod)
 
     manifest_path = os.path.join(build.WORKSHOP_DIR, "manifest.json")
     if not os.path.isfile(manifest_path):
@@ -193,12 +232,17 @@ def upload_code_mod(mod, change_note):
     print("%s v%s → 条目 %s" % (mod, build.VERSION, item_id))
     if change_note == "--dry-run":
         return
+    title = getattr(build, "WORKSHOP_TITLE", None) if public else None
+    tags = getattr(build, "WORKSHOP_TAGS", None) if public else None
     ws.submit(int(item_id), build.WORKSHOP_DIR, os.path.join(build.WORKSHOP_DIR, "preview.png"),
-              build.steam_description(), change_note)
+              build.steam_description(), change_note, title=title, tags=tags, public=public)
     print("https://steamcommunity.com/sharedfiles/filedetails/?id=%s" % item_id)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         sys.exit(__doc__)
-    upload_code_mod(sys.argv[1], sys.argv[2])
+    if sys.argv[2] == "--create":
+        create_code_mod(sys.argv[1])
+    else:
+        upload_code_mod(sys.argv[1], sys.argv[2], public="--public" in sys.argv[3:])
