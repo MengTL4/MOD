@@ -30,14 +30,24 @@ Combat: turn planning
   a healthy, armored companion steps between a zombie and you, a wounded one doesn't.
 - Body part: head = chance to kill; body = attack power drops proportionally (0 = can't claw);
   legs = action power drops proportionally.
+- Crippled zombies (no body left, can't claw, but still bite the bleeding) get finished off,
+  so the party doesn't stand guard over one forever.
+- Weapon wear is a cost (each melee hit takes 6-8 condition, more on the head): no wrecking
+  a weapon for a tiny gain.
+- A companion with no usable melee weapon takes a spare one from you or another companion:
+  everyone keeps at least one, and never your best one or your favorite weapon.
 - A gunshot pulls up to 40 nearby zombies; that cost is part of the maths.
 - They close a door next to them when it clearly helps; companions closest to zombies act first.
 - No reading, crafting or repairs while a zombie can reach them; they put on armor they carry.
 - Fixes a vanilla bug where a companion with nowhere to move crashes the whole companion turn.
 
-Tested on a real save against the vanilla AI (same scenarios, 8 turns each, you standing still;
-52 scenarios not used for tuning): vanilla lost 5 companions, 287 companion HP and 29.6 of your HP;
-this mod lost 0 companions, 22 companion HP and none of yours.
+Tested on a real save against the vanilla AI (same scenarios, 30 turns each with zombies
+arriving all the time; 40 scenarios not used for tuning):
+- you standing still: vanilla lost 9 companions, 285 companion HP and 8.7 of your HP;
+  this mod lost 0 companions, 6 companion HP and none of yours.
+- you under AI Takeover: vanilla lost 1 companion, 76 companion HP and 21.7 of your HP;
+  this mod lost 0, 1.8 and 0.
+Kills were about the same as vanilla.
 
 Survival and teamwork
 - Medicine below 50% HP, staying under the headache limit; above it only when critical,
@@ -52,7 +62,7 @@ Survival and teamwork
 
 SETTINGS
 Edit the constants at the top of <game>\companion_ai\companion_ai.py and restart the game,
-e.g. PROTECT_PLAYER_WEIGHT, RISK_AVERSION, HEAL_HP_RATIO, GUARD, CLOSE_DOORS, PICK_UP_NEEDED, KEEP_DROPPED.
+e.g. PROTECT_PLAYER_WEIGHT, RISK_AVERSION, HEAL_HP_RATIO, GUARD, CLOSE_DOORS, ARM_FROM_PARTY, PICK_UP_NEEDED, KEEP_DROPPED.
 Each one is explained in the file. Every decision is logged to <game>\companion_ai\companion_ai.log.
 
 AFTER A MOD OR GAME UPDATE

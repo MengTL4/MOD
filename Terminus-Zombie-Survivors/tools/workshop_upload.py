@@ -40,6 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GAME = os.path.dirname(HERE)
 INTERNAL = os.path.join(GAME, "_internal")
 APP_ID = 1534980
+DESCRIPTION_MAX = 8000                 # Steam 按 UTF-8 字节数算
 
 
 def _extract_steamworks(exe, out):
@@ -127,6 +128,9 @@ class Workshop:
 
     def submit(self, item_id, content, preview, description, change_note, title=None, tags=None, public=False):
         """更新条目的内容、预览图、描述；title / tags 为 None 时保持不变，public 时设为公开。"""
+        size = len(description.encode("utf-8"))
+        if size > DESCRIPTION_MAX:          # 超长时 Steam 只打一行警告、照样提交，描述却没改
+            sys.exit("页面描述 %d 字节，超过 Steam 上限 %d（中文每字 3 字节），请删减后再上传。" % (size, DESCRIPTION_MAX))
         ws = self.sw.Workshop
         h = ws.StartItemUpdate(APP_ID, item_id)
         if title is not None:
