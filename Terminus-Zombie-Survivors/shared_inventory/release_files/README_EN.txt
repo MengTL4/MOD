@@ -34,9 +34,9 @@ WHAT IT DOES
   both sides show their own real inventory so you can rebalance weight.
 
 NOT SHARED
-- Clothes and bags a companion is wearing, the weapon in their hands, bedding in use.
+- Clothes and bags a companion is wearing, bedding in use.
   Putting on a companion's clothing moves it to you first.
-- Passive "carried" effects: flashlight light, umbrella/rain gear, armed level.
+- Passive "carried" effects: flashlight light, umbrella/rain gear, armed level, MINA's compass, NATHAN's notebook.
   Using a companion's flashlight from your inventory moves it to you first.
 - Weight: everyone carries their own; picked-up items go to whoever picks them up.
 

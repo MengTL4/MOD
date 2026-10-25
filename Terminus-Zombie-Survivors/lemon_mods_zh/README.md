@@ -50,7 +50,8 @@ uv run --no-project --python 3.12 python -I publish.py --dry-run          # 只�
 uv run --no-project --python 3.12 python -I publish.py "v2.0.1 更新说明"
 ```
 
-脚本直接从 `Terminus.exe` 里取出游戏自带的 steamworks 绑定来上传，会更新标题、描述、标签、内容和预览图，并按 `DEPENDENCIES` 同步「必需物品」。
+会更新标题、描述、标签、内容和预览图，并按 `DEPENDENCIES` 同步「必需物品」。
+Steam 相关的部分在共用的 [`../tools/workshop_upload.py`](../tools/workshop_upload.py)（直接从 `Terminus.exe` 里取游戏自带的 steamworks 绑定），所以 `tools` 文件夹也要在游戏根目录。
 不要用游戏自带的 WorkshopUploader，它会用 `manifest.description` 覆盖页面上的长描述。
 
 作者新出 MOD 时：在 `workshop/lang/Simplified Chinese/` 加一个翻译文件，在 `manifest.json` 的 `language_patches` 里登记，然后发布。
