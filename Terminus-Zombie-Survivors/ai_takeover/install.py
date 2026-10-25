@@ -8,8 +8,10 @@
 
 原理：游戏是 PyInstaller 打包的 Python 3.12 程序，官方 Workshop 模组只支持 JSON 数据，
 不能加代码。本脚本把 _internal/base_library.zip 里的标准库模块 linecache.pyc 替换为
-「原样执行原 linecache 字节码 + 一个很小的导入钩子」的版本。游戏加载动作面板和主场景时，
-钩子会加载本目录的 ai_takeover.py 给游戏类打补丁。原 linecache 的行为完全不变。
+「原样执行原 linecache 字节码 + 一个很小的 MOD 加载器」的版本。原 linecache 的行为完全不变。
+
+MOD 加载器（与队伍背包共享等 MOD 共用）会加载游戏目录下所有 <名字>\\<名字>.py 形式的 MOD，
+并在游戏模块（MOD 的 PATCH_TARGETS）加载完成后调用 MOD 的 on_module_loaded(name, module)。
 
 必须用 Python 3.12 运行（与游戏内置 Python 版本一致，字节码格式才能兼容）。
 """
@@ -23,11 +25,15 @@ import sys
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+MOD_NAME = os.path.basename(HERE)
 GAME_DIR = os.path.dirname(HERE)
 ZIP_PATH = os.path.join(GAME_DIR, "_internal", "base_library.zip")
 BACKUP_PATH = os.path.join(HERE, "backup", "base_library.zip.orig")
+DISABLED_PATH = os.path.join(HERE, "DISABLED")
 TARGET = "linecache.pyc"
-MARK = "TERMINUS_AI_TAKEOVER_BOOTSTRAP_V1"
+# V1 = 只加载本 MOD 的旧引导代码；V2 = 通用 MOD 加载器。安装包里的 install.ps1 只认前缀
+MARK_PREFIX = "TERMINUS_AI_TAKEOVER_BOOTSTRAP"
+MARK = MARK_PREFIX + "_V2_MODLOADER"
 
 BOOTSTRAP_TEMPLATE = r'''
 _TAI_MARK = %(mark)r
@@ -44,31 +50,54 @@ def _tai_bootstrap():
     sys._tai_bootstrapped = True
     import os
     base = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    mod_path = os.path.join(os.path.dirname(base), "ai_takeover", "ai_takeover.py")
-    if not os.path.isfile(mod_path):
+    game_dir = os.path.dirname(base)
+    # 没有声明 PATCH_TARGETS 的旧版 MOD
+    legacy_targets = {"ai_takeover": ("ui.panels.actionpanel", "scenes.main")}
+    found = []
+    try:
+        for d in sorted(os.listdir(game_dir)):
+            path = os.path.join(game_dir, d, d + ".py")
+            if os.path.isfile(path) and not os.path.exists(os.path.join(game_dir, d, "DISABLED")):
+                found.append((d, path))
+    except OSError:
         return
-    targets = ("ui.panels.actionpanel", "scenes.main")
-    state = {}
+    if not found:
+        return
+
+    def log_error(d, what):
+        try:
+            import traceback
+            with open(os.path.join(game_dir, d, d + ".log"), "a", encoding="utf-8") as f:
+                f.write("mod loader error (%%s):\n%%s\n" %% (what, traceback.format_exc()))
+        except Exception:
+            pass
+
+    mods = []
+    targets = {}
+    for d, path in found:
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(d + "_mod", path)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[d + "_mod"] = mod
+            spec.loader.exec_module(mod)
+        except Exception:
+            log_error(d, "loading " + path)
+            continue
+        if not hasattr(mod, "on_module_loaded"):
+            continue
+        mods.append((d, mod))
+        for name in getattr(mod, "PATCH_TARGETS", None) or legacy_targets.get(d, ()):
+            targets.setdefault(name, []).append((d, mod))
+    if not targets:
+        return
 
     def notify(name, module):
-        try:
-            mod = state.get("mod")
-            if mod is None:
-                import importlib.util
-                spec = importlib.util.spec_from_file_location("ai_takeover_mod", mod_path)
-                mod = importlib.util.module_from_spec(spec)
-                sys.modules["ai_takeover_mod"] = mod
-                spec.loader.exec_module(mod)
-                state["mod"] = mod
-            mod.on_module_loaded(name, module)
-        except Exception:
+        for d, mod in targets.get(name, ()):
             try:
-                import traceback
-                log = os.path.join(os.path.dirname(mod_path), "ai_takeover.log")
-                with open(log, "a", encoding="utf-8") as f:
-                    f.write("bootstrap error while patching %%s:\n%%s\n" %% (name, traceback.format_exc()))
+                mod.on_module_loaded(name, module)
             except Exception:
-                pass
+                log_error(d, "patching " + name)
 
     class _Loader:
         def __init__(self, inner, name):
@@ -119,11 +148,21 @@ def read_zip():
 
 
 def is_patched(pyc):
+    return MARK_PREFIX.encode() in pyc
+
+
+def is_current(pyc):
     return MARK.encode() in pyc
 
 
+def other_mods():
+    """游戏目录下其他使用同一加载器的 MOD。"""
+    return [d for d in os.listdir(GAME_DIR)
+            if d != MOD_NAME and os.path.isfile(os.path.join(GAME_DIR, d, d + ".py"))]
+
+
 def extract_original(pyc):
-    """从已打补丁的 linecache.pyc 里取出嵌入的原始 pyc。"""
+    """从已打补丁的 linecache.pyc（新旧加载器均可）里取出嵌入的原始 pyc。"""
     code = marshal.loads(pyc[16:])
     for const in code.co_consts:
         if isinstance(const, bytes) and const[:4] == pyc[:4] and len(const) > 16:
@@ -133,7 +172,7 @@ def extract_original(pyc):
 
 def build_patched(orig_pyc):
     src = BOOTSTRAP_TEMPLATE % {"mark": MARK, "orig": orig_pyc}
-    code = compile(src, "<ai_takeover_bootstrap>", "exec", dont_inherit=True, optimize=0)
+    code = compile(src, "<terminus_mod_loader>", "exec", dont_inherit=True, optimize=0)
     # 头部沿用原文件（魔数 + flags + hash），zipimport 不会校验源码
     return orig_pyc[:16] + marshal.dumps(code)
 
@@ -163,6 +202,8 @@ def check_python(pyc):
 def install():
     pyc, info = read_zip()
     check_python(pyc)
+    if os.path.exists(DISABLED_PATH):
+        os.remove(DISABLED_PATH)
     if is_patched(pyc):
         orig = extract_original(pyc)
     else:
@@ -170,7 +211,8 @@ def install():
         os.makedirs(os.path.dirname(BACKUP_PATH), exist_ok=True)
         shutil.copy2(ZIP_PATH, BACKUP_PATH)
         print("已备份原文件到", BACKUP_PATH)
-    rewrite_zip(build_patched(orig), info)
+    if not is_current(pyc):
+        rewrite_zip(build_patched(orig), info)
     print("安装完成。启动游戏后，动作面板里会出现机器人图标的「AI 托管」按钮。")
 
 
@@ -179,13 +221,25 @@ def uninstall():
     if not is_patched(pyc):
         print("当前未安装，无需卸载。")
         return
+    others = other_mods()
+    if others:
+        # 其他 MOD 还在用加载器，只停用本 MOD
+        open(DISABLED_PATH, "w").close()
+        print("已停用本 MOD（%s 仍在使用 MOD 加载器，所以没有还原 base_library.zip）。" % "、".join(others))
+        print("现在可以删除 ai_takeover 文件夹。")
+        return
     rewrite_zip(extract_original(pyc), info)
     print("已卸载（base_library.zip 已还原）。可以删除 ai_takeover 文件夹。")
 
 
 def status():
     pyc, _ = read_zip()
-    print("已安装" if is_patched(pyc) else "未安装")
+    if not is_patched(pyc):
+        print("未安装")
+    elif os.path.exists(DISABLED_PATH):
+        print("已停用")
+    else:
+        print("已安装" if is_current(pyc) else "已安装（旧版引导代码，运行 install.bat 可升级为通用 MOD 加载器）")
 
 
 def main():

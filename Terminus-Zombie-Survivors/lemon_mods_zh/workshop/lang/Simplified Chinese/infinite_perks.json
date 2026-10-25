@@ -1,0 +1,14 @@
+{
+  "perk_lc_infinite_regeneration": "无限再生",
+  "perk_lc_infinite_regeneration_desc": "每回合恢复<color=GREEN>{num}</color> HP",
+  "perk_lc_infinite_stamina": "无限体力",
+  "perk_lc_infinite_stamina_desc": "每回合额外获得<color=GREEN>{num}</color> AP",
+  "perk_lc_infinite_restful_sleep": "无限安眠",
+  "perk_lc_infinite_restful_sleep_desc": "睡眠时能量恢复<color=GREEN>+{num}%</color>",
+  "perk_lc_infinite_graceful_steps": "无限轻盈步伐",
+  "perk_lc_infinite_graceful_steps_desc": "移动AP消耗<color=GREEN>-{num}%</color>",
+  "perk_lc_infinite_weapon_knowledge": "无限伤害",
+  "perk_lc_infinite_weapon_knowledge_desc": "攻击伤害值<color=GREEN>+{num}</color>",
+  "perk_lc_infinite_accuracy": "无限命中",
+  "perk_lc_infinite_accuracy_desc": "命中率<color=GREEN>+{num}%</color>"
+}

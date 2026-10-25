@@ -39,6 +39,9 @@ CONTINUOUS_DELAY = 0.6
 
 ACTION = "ai_takeover"
 MOD_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# MOD 加载器据此决定把哪些游戏模块的加载事件通知给本 MOD
+PATCH_TARGETS = ("ui.panels.actionpanel", "scenes.main")
 LOG_PATH = os.path.join(MOD_DIR, "ai_takeover.log")
 
 # 13x13 图标，与原生动作图标同色同尺寸

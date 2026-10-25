@@ -4,3 +4,4 @@ __pycache__/
 *.log
 backup/
 workshop_item.json
+Terminus-Zombie-Survivors/shared_inventory/prefs.json

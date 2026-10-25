@@ -11,7 +11,7 @@ Terminus: Zombie Survivors - 主角 AI 托管 MOD（非官方）
 ◆ 从创意工坊订阅的：
   1. 订阅后等 Steam 下载完成，先退出游戏。
   2. 打开 MOD 下载目录：
-       <你的 Steam 库>\steamapps\workshop\content\1534980\3821926212
+       <你的 Steam 库>\steamapps\workshop\content\1534980\__ITEM_ID__
      最快的找法：在游戏目录（Steam 库里右键游戏 → 管理 → 浏览本地文件）向上退两级到 steamapps，
      再进 workshop\content\1534980，里面带 install.bat 的那个文件夹就是。
   3. 双击 install.bat，看到“安装完成”即可。
@@ -44,11 +44,12 @@ Steam 更新游戏可能会还原被修改的文件，导致按钮消失，再�
 如果提示“Python 运行库不匹配”，说明游戏升级了内置 Python，需要等 MOD 更新。
 
 【卸载】
-双击 uninstall.bat（游戏会恢复原样并删除 <游戏目录>\ai_takeover），然后取消订阅。
+双击 uninstall.bat（删除 <游戏目录>\ai_takeover；没有其他 MOD 在用时游戏会恢复原样），然后取消订阅。
 也可以在 Steam 里“验证游戏文件的完整性”，再删除 <游戏目录>\ai_takeover 文件夹。
 
 【原理与说明】
 安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库 linecache.pyc，
-换成“原样执行原代码 + 加载 ai_takeover.py”的版本，原文件备份在 <游戏目录>\ai_takeover\backup。
+换成“原样执行原代码 + MOD 加载器”的版本。MOD 加载器与「队伍背包共享」等 MOD 共用，
+可以同时安装；安装包自带原始文件，最后一个 MOD 卸载时用它还原。
 单机游戏，不影响存档，卸载后存档照常可用。
 出错时游戏不会崩溃，错误写在 <游戏目录>\ai_takeover\ai_takeover.log，反馈问题时请附上。

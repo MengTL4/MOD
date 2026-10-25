@@ -10,7 +10,7 @@ mod manager has no effect on it - use install / uninstall below.
 
 INSTALL (no Python needed)
 - Workshop: subscribe, wait for the download, quit the game, then open
-    <Steam library>\steamapps\workshop\content\1534980\3821926212
+    <Steam library>\steamapps\workshop\content\1534980\__ITEM_ID__
   and double-click install.bat.
 - Zip download: extract anywhere and double-click install.bat.
 The installer finds the game automatically (or asks you to pick the folder), copies the mod
@@ -33,11 +33,12 @@ AFTER A MOD OR GAME UPDATE
 Run install.bat again. If it reports a Python runtime mismatch, wait for a mod update.
 
 UNINSTALL
-Double-click uninstall.bat (restores the game and removes <game>\ai_takeover), then
-unsubscribe. Alternatively: Steam > Verify integrity of game files, then delete <game>\ai_takeover.
+Double-click uninstall.bat (removes <game>\ai_takeover and restores the game unless another
+mod still uses the loader), then unsubscribe. Alternatively: Steam > Verify integrity of game files, then delete <game>\ai_takeover.
 
 HOW IT WORKS
 The installer changes one file: the Python stdlib module linecache.pyc inside
 <game>\_internal\base_library.zip, replaced by a version that runs the original code and
-then loads ai_takeover.py. The original is backed up to <game>\ai_takeover\backup.
+then a small mod loader shared with other mods (e.g. Shared Party Inventory), so they can be
+installed together. The package ships the original file to restore it on uninstall.
 Single-player only; saves are unaffected. Errors go to <game>\ai_takeover\ai_takeover.log.
