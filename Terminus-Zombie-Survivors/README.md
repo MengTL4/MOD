@@ -4,7 +4,7 @@
 |---|---|---|---|
 | [AI 托管主角](ai_takeover/README.md)（`ai_takeover`） | Python 注入 | [3821926212](https://steamcommunity.com/sharedfiles/filedetails/?id=3821926212) | 一键让游戏自带的队友 AI 接管主角行动一回合，支持持续托管 |
 | [队伍背包共享](shared_inventory/README.md)（`shared_inventory`） | Python 注入 | [3825232685](https://steamcommunity.com/sharedfiles/filedetails/?id=3825232685) | 主角和队友的背包合并成一个，制作、烹饪、用药、队友 AI 都从全队物品里找 |
-| [队友 AI 加强](companion_ai/README.md)（`companion_ai`） | Python 注入 | [3826759381](https://steamcommunity.com/sharedfiles/filedetails/?id=3826759381) | 按游戏真实规则做回合规划（整个队伍的挨打风险、替你挡刀、补刀、省着用武器、关门、不乱开枪），没武器时从队伍拿、互相治疗、自动穿护甲、护卫、捡弹药和药品 |
+| [队友 AI 加强](companion_ai/README.md)（`companion_ai`） | Python 注入 | [3826759381](https://steamcommunity.com/sharedfiles/filedetails/?id=3826759381) | 按游戏真实规则做回合规划（整个队伍的挨打风险、替你挡刀、补刀、省着用武器、关门、不乱开枪），没武器时从队伍拿、可选搜刮整个地点、互相治疗、自动穿护甲、护卫、捡弹药和药品 |
 | [LemonCitrine 全系列 MOD 汉化](lemon_mods_zh/README.md)（`lemon_mods_zh`） | 官方数据 MOD | [3826727240](https://steamcommunity.com/sharedfiles/filedetails/?id=3826727240) | 作者 LemonCitrine 所有 MOD 的简体中文翻译合集 |
 
 三个 Python 注入 MOD 可以同时使用。各自的用法、配置、排错见各目录的 README。
