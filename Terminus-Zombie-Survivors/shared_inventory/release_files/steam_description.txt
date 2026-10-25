@@ -25,7 +25,7 @@
 [*]和队友交换物品的界面里，双方显示各自的真实背包，方便调配负重。
 [/list]
 
-[b]不共享的东西[/b]：队友穿着的衣服和背包、手持的武器、正在用的铺盖（穿队友包里的衣服时会先转到自己身上）；手电照明、雨具防水这类“带在身上就生效”的效果（在背包里使用队友的手电时会先拿到自己身上）；负重——各算各的，捡到的东西进捡的人背包。
+[b]不共享的东西[/b]：队友穿着的衣服和背包、正在用的铺盖（穿队友包里的衣服时会先转到自己身上）；手电照明、雨具防水、米娜的指南针、内森的笔记本这类“带在身上就生效”的效果（在背包里使用队友的手电时会先拿到自己身上）；负重——各算各的，捡到的东西进捡的人背包。
 [b]注意[/b]：背包界面的「全部丢下」会丢下当前显示的所有东西——「全队物品」时包括队友身上的物品，「只看自己」时只丢自己的。
 
 [b]设置[/b]：用记事本打开 <游戏目录>\shared_inventory\shared_inventory.py，把 SAME_LOCATION_ONLY 改成 True 就只和同一地图上的队友共享。
@@ -55,7 +55,7 @@ Workshop mods for this game can only contain data, so the game never runs this m
 [/list]
 
 [h2]Details[/h2]
-Not shared: clothes/bags a companion is wearing, the weapon in their hands, bedding in use, passive carried effects (flashlight light, rain gear), and weight - everyone carries their own. Companions' items show the carrier's initial on the slot, and hovering shows who carries it. A "party / mine only" toggle (hotkey V) below the inventory panel lists just your own items. If ending a turn ever errors, the mod hands control back to you instead of spinning forever. In the companion trade screen both sides show their real inventory. "Drop all" drops the whole shared pool. Set SAME_LOCATION_ONLY = True in shared_inventory.py to share only with companions on the same map.
+Not shared: clothes/bags a companion is wearing, bedding in use, passive carried effects (flashlight light, rain gear, MINA's compass, NATHAN's notebook), and weight - everyone carries their own. Companions' items show the carrier's initial on the slot, and hovering shows who carries it. A "party / mine only" toggle (hotkey V) below the inventory panel lists just your own items. If ending a turn ever errors, the mod hands control back to you instead of spinning forever. In the companion trade screen both sides show their real inventory. "Drop all" drops the whole shared pool. Set SAME_LOCATION_ONLY = True in shared_inventory.py to share only with companions on the same map.
 
 [h2]Update / uninstall[/h2]
 After a mod or game update, run install.bat again. To remove, run uninstall.bat, then unsubscribe. Saves load normally without the mod.

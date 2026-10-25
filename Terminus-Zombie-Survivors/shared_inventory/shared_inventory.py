@@ -3,7 +3,7 @@
 Terminus: Zombie Survivors - 队伍背包共享 MOD
 
 主角和所有队友的背包合并成一个大背包：
-  - 打开任何人的背包都能看到、使用、丢弃全队的物品（队友身上穿戴的衣物/背包、手持武器、铺盖除外）
+  - 打开任何人的背包都能看到、使用、丢弃全队的物品（队友身上穿戴的衣物/背包、正在用的铺盖除外）
   - 制作、烹饪、修理、用药、生火、加固等所有「检索身上物品」的地方都会用到全队物品
   - 队友 AI（以及 AI 托管 MOD 控制的主角）吃喝、用药、制作、读书、修理时同样从全队物品里找
   - 物品被消耗/丢弃/交出时，从真正携带它的人身上扣除
@@ -59,6 +59,7 @@ BADGE_COLORS = ((255, 214, 64), (120, 200, 255), (255, 150, 120), (170, 230, 130
 # 加载器据此决定把哪些游戏模块的加载事件通知给本 MOD
 PATCH_TARGETS = (
     "core.creature.character",
+    "core.listenerlist",
     "core.item.item",
     "core.item.clothing",
     "core.item.tool",
@@ -80,6 +81,9 @@ RAW_FUNCS = {
         ("Character", "armed_lv"),               # 持械等级
         ("Character", "get_light_cells"),        # 手电等照明
         ("Character", "get_water_resistance_items"),  # 雨具防水
+    ),
+    "core.listenerlist": (
+        ("item_list", "_notify_change"),         # 「宝物猎人」成就只数自己身上的珠宝
     ),
     "core.item.clothing": (
         ("BaseClothing", "put_on"),              # 穿戴前先把物品转移到自己身上
@@ -106,9 +110,12 @@ RAW_FUNCS = {
     ),
 }
 
-# 只看自己身上的物品名：has_item 查询这些名字时不看队友（雨伞要自己带着才能挡雨，
-# 游戏里「在用伞」「防水」「伞是否在用」三处必须一致，否则会在 max() 上报错卡住回合）
-PERSONAL_ITEMS = frozenset(("umbrella",))
+# 只看自己身上的物品名：has_item 查询这些名字时不看队友。这些都是「带在身上就生效」的物品：
+#   umbrella         雨伞要自己带着才能挡雨（游戏里「在用伞」「防水」「伞是否在用」三处必须一致，
+#                    否则会在 max() 上报错卡住回合）
+#   mina_compass     米娜的指南针：地点间移动 AP 减少
+#   nathan_notebook  内森的笔记本：用药效果 ×1.2
+PERSONAL_ITEMS = frozenset(("umbrella", "mina_compass", "nathan_notebook"))
 
 # 依次为：简体中文、繁体中文、其他语言
 TEXT = {
@@ -357,14 +364,17 @@ def save_prefs():
         log_exc("保存设置", once=True)
 
 
-def private_items(member):
-    """队友身上不参与共享的物品：穿戴的衣物和背包、手持武器、正在用的铺盖。"""
-    ids = {id(i) for i in member.worn_items}
-    ids.update(id(i) for i in getattr(member, "used_bedding", ()) or ())
-    weapon = getattr(member, "holding_weapon", None)
-    if weapon is not None:
-        ids.add(id(weapon))
-    return ids
+def shareable_items(member):
+    """队友身上参与共享的物品：除去穿戴的衣物和背包、正在用的铺盖。
+    （主角和队友没有「手持武器」，攻击时从背包里选武器，所以武器照常共享。）"""
+    worn = member.worn_items
+    bedding = getattr(member, "used_bedding", None)
+    if not worn and not bedding:
+        return member._items
+    hidden = set(map(id, worn))
+    if bedding:
+        hidden.update(map(id, bedding))
+    return [i for i in member._items if id(i) not in hidden]
 
 
 # ----------------------------------------------------------------------------
@@ -379,18 +389,12 @@ class SharedItems(list):
     """
 
     def __init__(self, owner, members):
+        # 游戏里每次读 char.items 都会建一次视图，这里是热点：整段拼接，不逐个判断
         raw = owner._items
         data = list(raw)
-        seen = {id(i) for i in data}
         for m in members:
-            if m is owner:
-                continue
-            hidden = private_items(m)
-            for item in m._items:
-                key = id(item)
-                if key not in hidden and key not in seen:
-                    seen.add(key)
-                    data.append(item)
+            if m is not owner:
+                data += shareable_items(m)
         super().__init__(data)
         self._owner = owner
         self._raw = raw
@@ -466,10 +470,10 @@ class SharedItems(list):
         return item
 
     def clear(self):
-        # 只清空自己身上的（视图开头的 len(raw) 个就是自己的物品）
-        n = len(self._raw)
+        # 只清空自己身上的；append 过的物品排在视图末尾，所以按身份过滤而不是按位置删
+        own = set(map(id, self._raw))
         self._raw.clear()
-        super().__delitem__(slice(0, n))
+        super().__setitem__(slice(None), [i for i in self if id(i) not in own])
 
     def __delitem__(self, index):
         items = self[index] if isinstance(index, slice) else [self[index]]
