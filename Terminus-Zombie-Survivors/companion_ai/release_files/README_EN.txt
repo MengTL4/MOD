@@ -19,22 +19,26 @@ The installer finds the game automatically (or asks you to pick the folder), cop
 to <game>\companion_ai and checks the game version first - on a mismatch it changes nothing.
 
 WHAT IT DOES
-Combat
-- Retreat: below 40% HP companions stop meleeing and move where zombies can't reach next turn,
-  close to you.
-- Body part: picked by expected damage using the game's own accuracy/damage/crit formulas
-  (vanilla always aims at the head). Crits only happen on the head (x5); a likely killing blow
-  goes to the head; when retreating, legs are preferred to slow pursuers.
-- Weapon: the one with the most expected damage this turn (accuracy, attack AP, walking first).
-- Target: zombies threatening you or another companion first, one-hit kills first,
-  then the weakest nearby one (focus fire), then distance.
-- Quiet combat: a gunshot pulls up to 40 nearby zombies to the shooter and costs ammo.
-  Melee or bows are used when they do at least half the damage.
-- Melee approach: out of reach, they wait just outside the zombie's attack range (vanilla
-  stands still when the path is long; this walks part of the way). They charge instead when the
-  zombie threatens the party or one hit will probably kill it.
-- Ranged: they pick a firing position the zombies can't reach.
-- End of turn: if still inside a zombie's attack range with AP left, they step out.
+Combat: turn planning
+- Companions do the maths with the game's real rules: standing on a given tile at the end of the turn,
+  how much damage will the whole party take in the next zombie turn, and how likely is someone to die
+  (zombies chase the nearest person, how many swings they get, AP spent bashing doors, dodge, damage minus
+  armor, and the bite rule: bleeding with 0 AP means a fatal bite). Your losses count 5x - if you fall, it's game over.
+- Every step compares target, weapon, body part, whether to walk up first, and hit-and-run vs. fighting it out,
+  with gains and risks in HP. They stop when it isn't worth it and end on the safest tile.
+- That yields retreating, waiting for zombies to walk up and striking first, hit-and-run, focus fire and rescues;
+  a healthy, armored companion steps between a zombie and you, a wounded one doesn't.
+- Body part: head = chance to kill; body = attack power drops proportionally (0 = can't claw);
+  legs = action power drops proportionally.
+- A gunshot pulls up to 40 nearby zombies; that cost is part of the maths.
+- They close a door next to them when it clearly helps; companions closest to zombies act first.
+- No reading, crafting or repairs while a zombie can reach them; they put on armor they carry.
+- Fixes a vanilla bug where a companion with nowhere to move crashes the whole companion turn.
+
+Tested on a real save against the vanilla AI (same scenarios, 8 turns each, you standing still;
+52 scenarios not used for tuning): vanilla lost 5 companions, 287 companion HP and 29.6 of your HP;
+this mod lost 0 companions, 22 companion HP and none of yours.
+
 Survival and teamwork
 - Medicine below 50% HP, staying under the headache limit; above it only when critical,
   never reaching the fainting limit (vanilla waits until HP < 5 and can pop a faint warning).
@@ -48,7 +52,7 @@ Survival and teamwork
 
 SETTINGS
 Edit the constants at the top of <game>\companion_ai\companion_ai.py and restart the game,
-e.g. RETREAT_HP_RATIO, HEAL_HP_RATIO, GUARD, QUIET_COMBAT, PICK_UP_NEEDED, KEEP_DROPPED.
+e.g. PROTECT_PLAYER_WEIGHT, RISK_AVERSION, HEAL_HP_RATIO, GUARD, CLOSE_DOORS, PICK_UP_NEEDED, KEEP_DROPPED.
 Each one is explained in the file. Every decision is logged to <game>\companion_ai\companion_ai.log.
 
 AFTER A MOD OR GAME UPDATE
