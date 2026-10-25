@@ -1,0 +1,74 @@
+[h1]队友 AI 加强 —— 更会打、更会活的队友[/h1]
+
+在游戏自带的队友 AI 上替换几个做决定的环节，其余保持原版。尊重游戏原生的「队友自动化设置」（攻击、用枪、用药、拾取、移动方式等）。[b]AI 托管主角[/b] MOD 控制主角时同样生效。
+
+[h2]⚠ 需要手动安装（订阅后不会自动生效）[/h2]
+游戏的创意工坊模组只支持数据（JSON/图片），不会执行代码，所以本 MOD 需要运行一次安装程序。[b]游戏内模组管理器里的开关对本 MOD 无效。[/b]
+
+[list]
+[*]订阅本 MOD，等 Steam 下载完成，[b]退出游戏[/b]。
+[*]打开 MOD 下载目录：[b]<你的 Steam 库>\steamapps\workshop\content\1534980\__ITEM_ID__[/b]
+  找法：Steam 库里右键游戏 → 管理 → 浏览本地文件，向上退两级到 steamapps，再进 workshop\content\1534980。
+[*]双击 [b]install.bat[/b]，看到“安装完成”就行。[b]不需要安装 Python。[/b]
+[/list]
+安装程序会自动找到游戏目录（找不到会弹窗让你选），把 MOD 复制到 <游戏目录>\companion_ai，并先校验游戏版本——不匹配就不会改动任何游戏文件。
+
+[h2]战斗[/h2]
+[list]
+[*][b]撤退[/b]：HP 低于 40% 时不主动近战，撤到僵尸下回合够不着、离你近的地方。
+[*][b]打哪个部位[/b]：按游戏自己的命中率、伤害、暴击公式算期望值再挑（原版永远打头）。暴击只有打头才有、伤害 ×5，一下能打死时优先打头；撤退时更偏向打腿拖慢追兵。
+[*][b]用哪把武器[/b]：按「这回合能打出的期望伤害」挑，算上命中率、攻击 AP、要不要先走过去。
+[*][b]先打谁[/b]：先打正在威胁你或其他队友的僵尸，能一下打死的优先；附近有头部血更少的就先打它，几个队友会集火同一只。
+[*][b]不乱开枪[/b]：开枪会把附近最多 40 只僵尸引过来，还费子弹。近战或弓够用时不开枪。
+[*][b]近战接近[/b]：够不着时停在僵尸攻击范围外等它过来，让它把行动力花在走路上（原版路远时会原地不动，这里先走一段）；僵尸正威胁你或其他队友、或这一下多半能打死时直接冲上去。
+[*][b]远程站位[/b]：找僵尸够不着、又能开火的位置。
+[*][b]回合结束前[/b]还站在僵尸攻击范围里、又有剩余 AP 时，退到安全格。
+[/list]
+
+[h2]生存与协作[/h2]
+[list]
+[*][b]用药[/b]：HP 低于 50% 就治疗，药物强度不超过头痛线；濒危时放宽，但永远不到昏厥线。原版 HP 低于 5 才吃药，强度超标时还会给你弹「会昏厥」的确认框。
+[*][b]互相治疗[/b]：给身边或走得到的你和其他队友包扎、用药，医生会用「急救」。不会为此走进僵尸攻击范围。
+[*][b]护卫[/b]：僵尸进入你周围 8 格内时，队友放下搜刮、升级、清障、修车、种田，先回到你身边。
+[*][b]拾取[/b]：原版默认只捡价值「高」以上的东西，弹药、绷带、药都不够格。现在另外会捡队伍里有对应武器的弹药和箭、药品绷带、比手上明显更好的近战武器；[b]不捡回你们自己丢下的东西[/b]；一回合走不到的先走一段；不进僵尸攻击范围。
+[/list]
+
+[h2]设置与日志[/h2]
+用记事本打开 <游戏目录>\companion_ai\companion_ai.py，改开头的数值（撤退线、用药线、护卫距离、是否不乱开枪、捡哪些东西等，每项都有说明），重启游戏生效。
+每次决策都会写进 <游戏目录>\companion_ai\companion_ai.log，例如「XX 对 僵尸 选用 斧头（预计打 头部……不开枪以免引来更多僵尸）」「XX 撤退（HP 低于 40%）」「XX 捡起 弹药 ×3、绷带」。
+
+[h2]更新 / 卸载[/h2]
+[list]
+[*][b]MOD 更新或游戏更新后[/b]：再双击一次 install.bat。若提示“Python 运行库不匹配”，说明游戏升级了内置 Python，请等待 MOD 更新。
+[*][b]卸载[/b]：双击 uninstall.bat（没有其他 MOD 在用时游戏恢复原样），再取消订阅。MOD 会给你们拿过的物品加一个记号来认出「你们丢的东西」，随存档保存，卸载后不起作用，存档照常可用。
+[/list]
+
+[h2]原理[/h2]
+安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库模块 linecache.pyc，换成“原样执行原代码 + MOD 加载器”的版本；安装包自带原始文件，卸载时用它还原。MOD 加载器与 [b]AI 托管主角[/b]、[b]队伍背包共享[/b] 等 MOD 共用，可以同时安装。MOD 源码（companion_ai.py）是明文。每个替换都有兜底：出错时改用原版逻辑，错误写进日志，反馈问题请附上。单机游戏。
+
+非官方 MOD，与开发商无关。
+
+[hr][/hr]
+
+[h1]Smarter Companion AI[/h1]
+Replaces a few decision points of the built-in companion AI and keeps the rest vanilla. Respects the game's own companion automation settings. Also applies to the player under the AI Takeover mod.
+
+[h2]⚠ Manual install required[/h2]
+Workshop mods for this game can only contain data, so the game never runs this mod by itself, and its switch in the in-game mod manager does nothing.
+[list]
+[*]Subscribe, wait for the download, [b]quit the game[/b].
+[*]Open [b]<Steam library>\steamapps\workshop\content\1534980\__ITEM_ID__[/b].
+[*]Double-click [b]install.bat[/b]. No Python needed. It finds the game, copies the mod to <game>\companion_ai and checks the game version first.
+[/list]
+
+[h2]What changes[/h2]
+[list]
+[*]Retreat below 40% HP to tiles zombies can't reach next turn; legs are preferred while retreating.
+[*]Body part, weapon and target chosen by expected damage using the game's own formulas; zombies threatening the party first, one-hit kills first, focus fire on the weakest nearby zombie.
+[*]Quiet combat: gunshots pull up to 40 zombies, so melee or bows are used when good enough.
+[*]Melee: wait just outside a zombie's reach (walking part of the way), charge when it threatens the party or one hit will likely kill it. Ranged: shoot from tiles zombies can't reach.
+[*]Earlier, safer medication; bandaging and treating each other; doctors use First Aid.
+[*]Guard you when zombies come within 8 tiles; step out of danger at the end of the turn.
+[*]Pick up ammo for party weapons, medicine and better melee weapons from the ground (vanilla ignores them by default), never items you dropped, approaching far items over several turns.
+[/list]
+Settings are constants at the top of companion_ai.py; decisions are logged to companion_ai.log. After a mod or game update run install.bat again; to remove run uninstall.bat, then unsubscribe. Works together with AI Takeover and Shared Party Inventory. Unofficial mod.
