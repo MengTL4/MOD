@@ -4,6 +4,6 @@
   "name": "队友 AI 加强 / Smarter Companion AI (需手动安装 Manual install)",
   "version": "__VERSION__",
   "game_version_min": "1.3.2",
-  "description": "让队友更会打、更会活：低血量撤退，按期望伤害选部位 / 武器 / 目标，集火，近战够不着时等僵尸过来、该救人时冲上去，不乱开枪引来尸潮；提前且安全地用药，互相包扎，医生会急救；僵尸靠近你时放下杂事回来护卫；捡地上的弹药、药品和更好的武器，不捡回你丢的东西。\n本 MOD 含代码，游戏不会自动加载：订阅后退出游戏，到 steamapps\\workshop\\content\\1534980\\__ITEM_ID__ 双击 install.bat 安装；卸载双击 uninstall.bat。模组管理器里的开关对本 MOD 无效。可与「AI 托管主角」「队伍背包共享」同时使用。\n\nSmarter companions: retreat at low HP, expected-damage based part/weapon/target choice, focus fire, no needless gunfire, safer medication and mutual healing, guarding you, and picking up ammo, medicine and better weapons from the ground. Subscribe, quit the game, run install.bat from this item's workshop folder. Use uninstall.bat to remove.",
+  "description": "让队友更会打、更会活：按游戏真实规则算回合结束会挨多少打（含流血被咬死），每一步挑最划算的目标、武器、部位和站位，打不划算就停手；满血穿护甲时替你挡刀，关门挡僵尸，不乱开枪引来尸潮；提前且安全地用药，互相包扎，医生会急救；僵尸靠近你时回来护卫；自动穿护甲；捡地上的弹药、药品和更好的武器，不捡回你丢的东西。真实存档实测：队友阵亡与掉血远低于原版。\n本 MOD 含代码，游戏不会自动加载：订阅后退出游戏，到 steamapps\\workshop\\content\\1534980\\__ITEM_ID__ 双击 install.bat 安装；卸载双击 uninstall.bat。模组管理器里的开关对本 MOD 无效。可与「AI 托管主角」「队伍背包共享」同时使用。\n\nSmarter companions: turn planning with the game's real combat rules (damage, dodge, armor, the fatal bite), protecting you, body-blocking, closing doors, no needless gunfire, safer medication and mutual healing, auto armor, and smarter looting. Subscribe, quit the game, run install.bat from this item's workshop folder. Use uninstall.bat to remove.",
   "content": {}
 }

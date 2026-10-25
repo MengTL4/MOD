@@ -13,17 +13,18 @@
 [/list]
 安装程序会自动找到游戏目录（找不到会弹窗让你选），把 MOD 复制到 <游戏目录>\companion_ai，并先校验游戏版本——不匹配就不会改动任何游戏文件。
 
-[h2]战斗[/h2]
+[h2]战斗：回合规划[/h2]
 [list]
-[*][b]撤退[/b]：HP 低于 40% 时不主动近战，撤到僵尸下回合够不着、离你近的地方。
-[*][b]打哪个部位[/b]：按游戏自己的命中率、伤害、暴击公式算期望值再挑（原版永远打头）。暴击只有打头才有、伤害 ×5，一下能打死时优先打头；撤退时更偏向打腿拖慢追兵。
-[*][b]用哪把武器[/b]：按「这回合能打出的期望伤害」挑，算上命中率、攻击 AP、要不要先走过去。
-[*][b]先打谁[/b]：先打正在威胁你或其他队友的僵尸，能一下打死的优先；附近有头部血更少的就先打它，几个队友会集火同一只。
-[*][b]不乱开枪[/b]：开枪会把附近最多 40 只僵尸引过来，还费子弹。近战或弓够用时不开枪。
-[*][b]近战接近[/b]：够不着时停在僵尸攻击范围外等它过来，让它把行动力花在走路上（原版路远时会原地不动，这里先走一段）；僵尸正威胁你或其他队友、或这一下多半能打死时直接冲上去。
-[*][b]远程站位[/b]：找僵尸够不着、又能开火的位置。
-[*][b]回合结束前[/b]还站在僵尸攻击范围里、又有剩余 AP 时，退到安全格。
+[*]队友按游戏真实规则算账：回合结束站在哪个格子，下个僵尸回合[b]整个队伍[/b]会挨多少打、有多大死亡风险（僵尸追最近的人、能打几下、砸门要花的行动力、闪避、伤害减防御、[b]流血且 AP 为 0 会被咬死[/b]）。你的损失按 5 倍算，因为你倒下游戏就结束。
+[*]每一步比较打哪只、用什么武器、打哪个部位、要不要先走过去、打一下就走还是这回合打到底，收益和风险都折算成 HP；不划算就停手，最后站到风险最低的格子。
+[*]由此而来：撤退、等僵尸走过来再先手、打完就跑、集火、救人；[b]满血穿护甲的队友会站到僵尸和你之间替你挡[/b]，血少的不会。
+[*]打哪个部位：头 = 打死的概率；躯干 = 攻击力按比例下降（打到 0 就不能抓人）；腿 = 行动力按比例下降。
+[*]开枪会把附近最多 40 只僵尸引过来，这个代价算进收益里。
+[*]站在门边、关门能明显少挨打就关门；离僵尸近的队友先行动。
+[*]僵尸能打到自己时不读书、制作、修理，留着 AP；自动穿上自己背包里有防御的衣物。
+[*]修了原版一个 bug：队友一步都走不了时，原版会报错、中断整个队友回合。
 [/list]
+[b]实测[/b]：在真实存档上和原版各带队打同样的场景（每场 8 回合，测试里的你站着不动、不还手），52 个没参与调参的场景合计：原版队友阵亡 5 次、掉血 287、你掉血 29.6；本 MOD 队友阵亡 0、掉血 22、你掉血 0。
 
 [h2]生存与协作[/h2]
 [list]
@@ -34,8 +35,8 @@
 [/list]
 
 [h2]设置与日志[/h2]
-用记事本打开 <游戏目录>\companion_ai\companion_ai.py，改开头的数值（撤退线、用药线、护卫距离、是否不乱开枪、捡哪些东西等，每项都有说明），重启游戏生效。
-每次决策都会写进 <游戏目录>\companion_ai\companion_ai.log，例如「XX 对 僵尸 选用 斧头（预计打 头部……不开枪以免引来更多僵尸）」「XX 撤退（HP 低于 40%）」「XX 捡起 弹药 ×3、绷带」。
+用记事本打开 <游戏目录>\companion_ai\companion_ai.py，改开头的数值（保护你的权重、怕挨打的程度、用药线、护卫距离、捡哪些东西等，每项都有说明），重启游戏生效。
+每次决策都会写进 <游戏目录>\companion_ai\companion_ai.log，例如「XX 用 斧头 打 僵尸 的头部（收益 6.3，回合结束预计损失 0.5）」「XX 关上门挡僵尸」「XX 捡起 弹药 ×3、绷带」。
 
 [h2]更新 / 卸载[/h2]
 [list]
@@ -63,12 +64,11 @@ Workshop mods for this game can only contain data, so the game never runs this m
 
 [h2]What changes[/h2]
 [list]
-[*]Retreat below 40% HP to tiles zombies can't reach next turn; legs are preferred while retreating.
-[*]Body part, weapon and target chosen by expected damage using the game's own formulas; zombies threatening the party first, one-hit kills first, focus fire on the weakest nearby zombie.
-[*]Quiet combat: gunshots pull up to 40 zombies, so melee or bows are used when good enough.
-[*]Melee: wait just outside a zombie's reach (walking part of the way), charge when it threatens the party or one hit will likely kill it. Ranged: shoot from tiles zombies can't reach.
-[*]Earlier, safer medication; bandaging and treating each other; doctors use First Aid.
-[*]Guard you when zombies come within 8 tiles; step out of danger at the end of the turn.
-[*]Pick up ammo for party weapons, medicine and better melee weapons from the ground (vanilla ignores them by default), never items you dropped, approaching far items over several turns.
+[*]Turn planning with the game's real rules: for every tile they can end on, the expected damage and death risk for the whole party in the next zombie turn (zombies chase the nearest person, swings left after walking and bashing doors, dodge, armor, and the fatal bite when bleeding at 0 AP). Your losses count 5x.
+[*]Each step compares target, weapon, body part, walking up first, and hit-and-run vs. fighting it out; they stop when it isn't worth it and end on the safest tile. Healthy armored companions body-block for you.
+[*]Body part by effect: head = kill chance, body = less attack power, legs = less action power. Gunshot noise (up to 40 zombies) is part of the cost.
+[*]Close doors when it helps, companions nearest to zombies act first, no chores while in reach, wear carried armor. Fixes a vanilla crash when a companion can't move.
+[*]Earlier, safer medication; bandaging and treating each other; doctors use First Aid; guarding you; picking up ammo, medicine and better melee weapons.
+[*]Tested on a real save vs. vanilla (52 unseen scenarios, 8 turns each, you standing still): companions lost 0 instead of 5, 22 HP instead of 287; you lost 0 HP instead of 29.6.
 [/list]
 Settings are constants at the top of companion_ai.py; decisions are logged to companion_ai.log. After a mod or game update run install.bat again; to remove run uninstall.bat, then unsubscribe. Works together with AI Takeover and Shared Party Inventory. Unofficial mod.
