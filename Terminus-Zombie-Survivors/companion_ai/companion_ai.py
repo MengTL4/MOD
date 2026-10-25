@@ -25,6 +25,8 @@ Terminus: Zombie Survivors - 队友 AI 加强 MOD
   - 拾取：地上用得上的东西（弹药、药品绷带、更好的近战武器）不论价值都捡；
     不捡回你们自己丢下的东西；一回合走不到的先走过去，下回合接着捡；不进僵尸攻击范围
     （原版默认只捡价值「高」以上的东西，弹药、绷带、药都不够格；够不着时原地不动）
+  - 搜刮整个地点（同伴AI设置里打开，默认关）：不只搜你附近，把当前地点各层都搜一遍，几个队友分头；
+    有僵尸靠近你时先回来护卫，背不动了就停
 
 同样作用于 AI 托管 MOD 控制的主角（它复用的就是这些队友 AI 函数）。
 尊重游戏原生的「队友自动化设置」（攻击开关、是否用枪、是否使用医疗用品等）。
@@ -38,6 +40,7 @@ import os
 import threading
 import time
 import traceback
+from contextlib import contextmanager
 
 # ----------------------------------------------------------------------------
 # 可调整的配置
@@ -151,6 +154,15 @@ KEEP_DROPPED = True
 SEARCH_APPROACH = True
 SEARCH_CANDIDATES = 12        # 每次比较离得最近的多少个目标格的路程（原版 6 个）
 
+# 搜刮整个地点：在游戏「同伴AI设置」的「搜索」下面加一个「搜刮整个地点」开关（每个队友单独设置，默认关）。
+# 原版队友只搜你附近（跟随：20 格内；靠近：5 格内）；打开后把当前地点各层没搜过的家具（和尸体，
+# 看「搜尸体」开关）、地上符合拾取设置的东西都搜一遍，几个队友分头去不同的地方。
+# 有僵尸靠近你时照样先回来护卫；背的东西让走一格多花 SWEEP_MAX_SLOWDOWN AP 时不再去搜新的地方
+# （游戏规则：超出负重减免后，每多「力量加成」公斤（力量 10 时 13 公斤），走一格多花 0.1 AP；
+#  0.5 大约是力量 10 背 65 公斤，走一格的 AP 接近翻倍）
+SWEEP_LOCATION = True         # False = 不加这个开关
+SWEEP_MAX_SLOWDOWN = 0.5
+
 # 把每次决策写进日志（选了什么目标 / 武器 / 部位，为什么撤退等）
 LOG_DECISIONS = True
 
@@ -160,8 +172,10 @@ MOD_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_PATH = os.path.join(MOD_DIR, "companion_ai.log")
 
 PATCH_TARGETS = (
+    "core.constants",
     "core.creature.character",
     "actions.compaction",
+    "ui.modals.compautomodal",
 )
 
 PARTS = ("head", "body", "legs")
@@ -203,12 +217,28 @@ LOCKED_TASKS = {
 # 在你和队友拿过的物品上做的记号（随存档保存，不影响原版逻辑）：带记号的东西在地上就是你们丢的
 OWNED_ATTR = "_companion_ai_owned"
 
+# 「搜刮整个地点」在队友 automation_settings 里的键（也加进游戏的默认设置，读档时才不会被清掉）
+SWEEP_KEY = "sweep_location"
+# 设置面板上的文字：简体中文、繁体中文、英文（其他语言用英文）
+SWEEP_TEXT = {
+    "Simplified Chinese": ("搜刮整个地点", "不只搜你附近，把这个地点各层没搜过的家具、地上的东西都搜一遍。"
+                           "几个队友会分头去不同的地方；有僵尸靠近你时先回来护卫，背不动了就停。"),
+    "Traditional Chinese": ("搜刮整個地點", "不只搜你附近，把這個地點各層沒搜過的家具、地上的東西都搜一遍。"
+                            "幾個隊友會分頭去不同的地方；有殭屍靠近你時先回來護衛，背不動了就停。"),
+    "English": ("Loot Whole Location", "Search every unsearched container and pick up items on every floor of this "
+                "location, not just near you. Companions split up; they come back to guard you when zombies get "
+                "close and stop when their load slows them down."),
+}
+
 
 class _State:
-    local = threading.local()   # attacker / target：本线程正在由本 MOD 指挥的一次攻击
+    local = threading.local()   # attacker / target：本线程正在由本 MOD 指挥的一次攻击；sweep：正在搜刮整个地点的队友
     orig = {}                   # 被替换的原版函数
     ca = None                   # actions.compaction 模块
     logged = set()
+    sweep_claims = {}           # id(队友) → 他要去搜的格子（别的队友避开附近，分头搜）
+    sweeping_now = set()        # 这回合在搜刮整个地点的队友（回合结束不往你身边拉）
+    sweep_notes = set()         # 已经记过日志的「背不动了」「搜完了」
 
 
 STATE = _State()
@@ -558,8 +588,8 @@ class Board:
         return got
 
     def place_cost(self, cell):
-        """站位本身的代价：离你太远。"""
-        if self.player is None:
+        """站位本身的代价：离你太远（这回合在搜刮整个地点的队友不算）。"""
+        if self.player is None or id(self.char) in STATE.sweeping_now:
             return 0.0
         return STAY_NEAR_COST * max(0, dist(cell, self.player.cell) - GUARD_STAY_WITHIN)
 
@@ -1383,7 +1413,7 @@ def pick_up_here(comp):
         comp.items.show_acquired_items(items)
 
 
-def approach(comp, pathdic, danger):
+def approach(comp, pathdic, danger, sweeping=False):
     """一回合走不到：沿路先走一段，不停在僵尸攻击范围里。返回是否走了。"""
     ca = STATE.ca
     path = ca.truncate_path_by_ap(comp, pathdic["path"])
@@ -1391,9 +1421,88 @@ def approach(comp, pathdic, danger):
         path = path[:-1]
     if len(path) < 2 or path[-1] is comp.cell:
         return False
-    decision("%s 去捡远处的东西，这回合先走一段" % name_of(comp))
+    decision("%s %s，这回合先走一段" % (name_of(comp), "搜刮整个地点：去下一处" if sweeping else "去捡远处的东西"))
     ca.move(comp, path)
     return True
+
+
+def sweep_enabled(comp):
+    """这个队友在设置面板里打开了「搜刮整个地点」（跟着「搜索」「移动」开关走）。主角不用。"""
+    s = settings(comp)
+    return (SWEEP_LOCATION and bool(s.get(SWEEP_KEY)) and bool(s.get("search", True))
+            and bool(s.get("movement", True)) and comp is not dt().game.player)
+
+
+def slowed_by_load(comp):
+    try:
+        return (getattr(comp, "move_ap_inc", 0) or 0) >= SWEEP_MAX_SLOWDOWN - 1e-9
+    except Exception:
+        return False
+
+
+def sweep_note(comp, kind, msg):
+    """同一件事（背不动了 / 搜完了）只记一次，情况变了再记。"""
+    key = (id(comp), kind)
+    if key not in STATE.sweep_notes:
+        STATE.sweep_notes.add(key)
+        decision(msg)
+
+
+def sweep_active(comp):
+    """这次按「搜刮整个地点」来搜：开关开着、还背得动。"""
+    if not sweep_enabled(comp):
+        return False
+    if slowed_by_load(comp):
+        sweep_note(comp, "full", "%s 背的东西太重了（走一格多花 %.1f AP），不再去搜新的地方" % (
+            name_of(comp), getattr(comp, "move_ap_inc", 0) or 0))
+        return False
+    STATE.sweep_notes.discard((id(comp), "full"))
+    return True
+
+
+@contextmanager
+def sweep_scope(comp):
+    """在这个范围里，原版的 get_follow_zone(comp) 返回整个地点（只对正在搜刮整个地点的这个队友）。"""
+    local = STATE.local
+    previous = getattr(local, "sweep", None)
+    active = sweep_active(comp)
+    if active:
+        local.sweep = comp
+    try:
+        yield active
+    finally:
+        local.sweep = previous
+
+
+def follow_zone(comp, *args, **kwargs):
+    """替换 compaction.get_follow_zone：搜刮整个地点时是这个地点的全部格子
+    （和原版一样，基地安全时只算室外格子），其他时候、其他用途（升级、睡觉）照原版。"""
+    if getattr(STATE.local, "sweep", None) is comp:
+        try:
+            loc = comp.loc
+            return list(loc.outside_cells if loc.is_fortified_house_safe() else loc.cells)
+        except Exception:
+            log_exc("搜刮整个地点（范围）", once=True)
+    return STATE.orig["get_follow_zone"](comp, *args, **kwargs)
+
+
+def check_search_or_pickup(comp, *args, **kwargs):
+    """替换 compaction.check_search_or_pickup：搜刮整个地点时按整个地点判断有没有东西可搜。"""
+    try:
+        with sweep_scope(comp):
+            return STATE.orig["check_search_or_pickup"](comp, *args, **kwargs)
+    except Exception:
+        log_exc("搜刮整个地点（判断）", once=True)
+    return STATE.orig["check_search_or_pickup"](comp, *args, **kwargs)
+
+
+def unclaimed(comp, cells):
+    """去掉别的队友已经要去搜的地方附近的格子（分头搜）；全被占了就不管。"""
+    claimed = [cell for owner, cell in STATE.sweep_claims.items() if owner != id(comp)]
+    if not claimed:
+        return cells
+    free = [c for c in cells if not any(cheb(c, t) <= 2 for t in claimed)]
+    return free or cells
 
 
 def handle_search_or_pickup(comp):
@@ -1405,13 +1514,21 @@ def handle_search_or_pickup(comp):
 
 
 def search_or_pickup(comp):
+    STATE.sweep_claims.pop(id(comp), None)
+    with sweep_scope(comp) as sweeping:
+        return search_loop(comp, sweeping)
+
+
+def search_loop(comp, sweeping):
     """流程和原版 handle_search_or_pickup 一样（走到最近的目标格，捡东西、搜家具 / 尸体，
     循环到 AP 不够），改动：
       - 比较最近 SEARCH_CANDIDATES 个目标格的路程（原版 6 个）
       - 不去僵尸攻击范围内的格子
-      - 一回合走不到时先走一段（原版原地不动）"""
+      - 一回合走不到时先走一段（原版原地不动）
+      - 搜刮整个地点：目标是整个地点（不只你附近），避开别的队友要去的地方"""
     ca = STATE.ca
     remember_party_items(comp)
+    follows = settings(comp).get("movement_option") in ("follow", "stay_close")
     for _ in range(50):     # 防止意外死循环；正常会因为 AP 用完或没有目标而结束
         if not ca.handle_enemy_encounter(comp):
             return None
@@ -1421,6 +1538,8 @@ def search_or_pickup(comp):
         here = comp.cell
         danger = danger_cells(threats_of(comp))
         cells = [c for c in ca.get_search_or_pickup_cells(comp) if c is here or c not in danger]
+        if sweeping:
+            cells = unclaimed(comp, cells)
         cells.sort(key=lambda c: (abs(c.floor - here.floor), dist(here, c)))
         reachable = []
         for cell in cells[:SEARCH_CANDIDATES]:
@@ -1428,13 +1547,19 @@ def search_or_pickup(comp):
             if pathdic:
                 reachable.append((cell, pathdic))
         if not reachable:
-            if settings(comp).get("movement_option") in ("follow", "stay_close"):
+            if sweeping and not cells and id(comp) not in STATE.sweeping_now:
+                sweep_note(comp, ("done", id(comp.loc)), "%s 把这个地点能搜的都搜完了" % name_of(comp))
+            if follows and id(comp) not in STATE.sweeping_now:
                 ca.move_closer_to_player(comp)
             return None
         target, pathdic = min(reachable, key=lambda cp: cp[1]["ap"])
+        if sweeping:
+            STATE.sweep_claims[id(comp)] = target
+            STATE.sweeping_now.add(id(comp))
+            STATE.sweep_notes.discard((id(comp), ("done", id(comp.loc))))
         if comp.ap < pathdic["ap"]:
-            if SEARCH_APPROACH and settings(comp).get("movement_option") in ("follow", "stay_close"):
-                approach(comp, pathdic, danger)
+            if SEARCH_APPROACH and (follows or sweeping):
+                approach(comp, pathdic, danger, sweeping)
             return None
         if not ca.move(comp, pathdic["path"]):
             return None
@@ -1558,7 +1683,10 @@ def handle_food_consumption(comp, *args, **kwargs):
 
 def move_closer_to_player(comp, *args, **kwargs):
     """修原版 bug：队友一步都走不了（AP 用光、被围住）时，原版对空列表取 min() 抛异常，
-    整个队友回合中断。这时什么都不做。"""
+    整个队友回合中断。这时什么都不做。
+    这回合在搜刮整个地点的队友不往你身边拉（原版「靠近玩家角色」做完任务会靠过来）。"""
+    if id(comp) in STATE.sweeping_now:
+        return None
     try:
         return STATE.orig["move_closer_to_player"](comp, *args, **kwargs)
     except ValueError:
@@ -1571,6 +1699,14 @@ def companion_action(*args, **kwargs):
     后面的人看着前面的结果再决定。行动完恢复原来的顺序。"""
     game = dt().game
     original = list(game.companions)
+    STATE.sweeping_now.clear()
+    try:
+        # 死了、关了开关的队友不再占着要去的地方
+        keep = {id(c) for c in original if getattr(c, "is_alive", True) and sweep_enabled(c)}
+        for owner in [o for o in STATE.sweep_claims if o not in keep]:
+            STATE.sweep_claims.pop(owner, None)
+    except Exception:
+        log_exc("搜刮整个地点（清理）", once=True)
     try:
         if ORDER_COMPANIONS and len(original) > 1:
             def engaged(comp):
@@ -1637,7 +1773,11 @@ def patch_compaction(module):
         "handle_search_or_pickup": handle_search_or_pickup,
         "companion_action": companion_action,
         "move_closer_to_player": move_closer_to_player,
+        "get_follow_zone": follow_zone,
+        "check_search_or_pickup": check_search_or_pickup,
     }
+    if not SWEEP_LOCATION:
+        del replacements["get_follow_zone"], replacements["check_search_or_pickup"]
     # 自己的搜刮流程要用到的原版函数，缺了就不替换搜刮
     search_needs = ("get_search_or_pickup_cells", "get_unsearched_objects", "truncate_path_by_ap", "soundplay")
     if not all(hasattr(module, n) for n in search_needs):
@@ -1664,12 +1804,92 @@ def patch_compaction(module):
             continue
         setattr(module, name, make_guarded(name, current))
     module._companion_ai_patched = True
-    log("已替换队友 AI：回合规划（威胁模型、选目标 / 武器 / 部位 / 站位）、安静作战、用药与互相治疗、自动穿护甲、没武器时从队伍拿、护卫、拾取、战斗时不做杂事")
+    log("已替换队友 AI：回合规划（威胁模型、选目标 / 武器 / 部位 / 站位）、安静作战、用药与互相治疗、自动穿护甲、没武器时从队伍拿、护卫、拾取、战斗时不做杂事"
+        + ("、搜刮整个地点（同伴AI设置里打开）" if SWEEP_LOCATION else ""))
+
+
+def patch_constants(module):
+    """把「搜刮整个地点」加进游戏的默认队友设置（默认关）：读档时游戏会按默认设置的键整理每个人的设置，
+    不在里面的键会被删掉；「重置为默认」也会用到它。卸载 MOD 后游戏读档时会自己把这个键去掉。"""
+    if not SWEEP_LOCATION:
+        return
+    defaults = getattr(module, "DEFAULT_AUTOMATION_SETTINGS", None)
+    if isinstance(defaults, dict):
+        defaults.setdefault(SWEEP_KEY, False)
+    else:
+        log("找不到默认队友设置，「搜刮整个地点」开关读档后不会保留")
+
+
+def add_sweep_text():
+    try:
+        from system.lang import Language
+        for lang, (label, tip) in SWEEP_TEXT.items():
+            table = Language.data.get(lang)
+            if isinstance(table, dict):
+                table.setdefault("compautomodal_" + SWEEP_KEY, label)
+                table.setdefault("compautomodal_%s_desc" % SWEEP_KEY, tip)
+    except Exception:
+        log_exc("设置面板文字", once=True)
+
+
+def patch_compautomodal(module):
+    """在「同伴AI设置」面板的「搜尸体」下面插入「搜刮整个地点」（挂在「搜索」下面，搜索关着时变灰）。"""
+    if not SWEEP_LOCATION or getattr(module, "_companion_ai_patched", False):
+        return
+    CompAutoModal = getattr(module, "CompAutoModal", None)
+    CheckboxOption = getattr(module, "CheckboxOption", None)
+    if CompAutoModal is None or CheckboxOption is None:
+        log("找不到同伴AI设置面板，「搜刮整个地点」只能在 companion_ai.py 里改 SWEEP_KEY 的默认值")
+        return
+
+    class SweepOption(CheckboxOption):
+        # 这个队友的设置里还没有这个键（例如刚从旧存档读进来）时当作关
+        def is_checked(self):
+            return bool(settings(self.modal.comp).get(self.name, False))
+
+        def set_tooltip(self):
+            try:
+                from system.lang import tr
+                from ui.tooltip import Tooltip
+                Tooltip.title(tr("compautomodal_" + SWEEP_KEY))
+                Tooltip.add(tr("compautomodal_%s_desc" % SWEEP_KEY))
+            except Exception:
+                log_exc("设置面板提示", once=True)
+
+    orig_setup = CompAutoModal.setup
+
+    def setup(self, *args, **kwargs):
+        result = orig_setup(self, *args, **kwargs)
+        try:
+            add_sweep_text()
+            options = self.options
+            anchor = next((o for o in options if getattr(o, "name", None) == "search_corpses"), None)
+            if anchor is None or any(getattr(o, "name", None) == SWEEP_KEY for o in options):
+                return result
+            step = 14       # 原版每行的间距
+            for o in options:
+                if o.x == anchor.x and o.y > anchor.y:
+                    o.y += step
+            options.insert(options.index(anchor) + 1, SweepOption(self, anchor.x, anchor.y + step, SWEEP_KEY, "search"))
+            box = self.inner_box
+            bottom = max(o.y for o in options) + step
+            box.min_y = min(box.min_y, -bottom + box.rect.h + 61)     # 和原版算滚动范围的式子一样
+            box.scrollbar.scroll.set_size()
+        except Exception:
+            log_exc("设置面板加开关", once=True)
+        return result
+
+    CompAutoModal.setup = setup
+    module.SweepOption = SweepOption
+    module._companion_ai_patched = True
+    log("已在同伴AI设置里加入「搜刮整个地点」")
 
 
 PATCHERS = {
+    "core.constants": patch_constants,
     "core.creature.character": patch_character,
     "actions.compaction": patch_compaction,
+    "ui.modals.compautomodal": patch_compautomodal,
 }
 
 

@@ -59,10 +59,21 @@ Survival and teamwork
   were ignored. Now they also pick up ammo/arrows for party weapons, medicine and clearly better
   melee weapons; never items you dropped; far items are approached over several turns;
   never inside a zombie's attack range.
+- Loot whole location (optional, off by default): the game's Companion AI Settings get a new
+  "Loot Whole Location" line under Search, per companion. Vanilla companions only search near you
+  (within 20 tiles when following, 5 when staying close). With it on they search every unsearched
+  container (and corpses if Search Corpses is on) and pick up items on every floor of the location,
+  splitting up between companions. They still come back to guard you when zombies get close, and stop
+  heading to new places once their load costs 0.5 extra AP per tile (about 65 kg at Strength 10).
+  Loot stays in the companion's own bag. They never travel to another location on their own.
+  Tested on a military base with 103 containers: with no zombies, 80 searched without it vs. all 103 with it;
+  with zombies arriving all the time, 77 vs. 86 on average, costing 2.8 companion HP over 6 runs and no deaths.
+  Small places are fully searched either way.
 
 SETTINGS
 Edit the constants at the top of <game>\companion_ai\companion_ai.py and restart the game,
-e.g. PROTECT_PLAYER_WEIGHT, RISK_AVERSION, HEAL_HP_RATIO, GUARD, CLOSE_DOORS, ARM_FROM_PARTY, PICK_UP_NEEDED, KEEP_DROPPED.
+e.g. PROTECT_PLAYER_WEIGHT, RISK_AVERSION, HEAL_HP_RATIO, GUARD, CLOSE_DOORS, ARM_FROM_PARTY, PICK_UP_NEEDED, KEEP_DROPPED,
+SWEEP_MAX_SLOWDOWN.
 Each one is explained in the file. Every decision is logged to <game>\companion_ai\companion_ai.log.
 
 AFTER A MOD OR GAME UPDATE
@@ -72,7 +83,7 @@ UNINSTALL
 Double-click uninstall.bat (removes <game>\companion_ai and restores the game unless
 another mod still uses the loader), then unsubscribe. To recognise items you dropped, the mod
 marks items your party has carried; the mark is saved with the game, does nothing without the mod,
-and saves load normally.
+and saves load normally. The Loot Whole Location setting is dropped by the game on the next load.
 
 HOW IT WORKS
 The installer changes one file: the Python stdlib module linecache.pyc inside
