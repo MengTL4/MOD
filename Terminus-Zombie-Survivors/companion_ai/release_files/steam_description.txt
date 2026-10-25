@@ -19,33 +19,40 @@
 [*]每一步比较打哪只、用什么武器、打哪个部位、要不要先走过去、打一下就走还是这回合打到底，收益和风险都折算成 HP；不划算就停手，最后站到风险最低的格子。
 [*]由此而来：撤退、等僵尸走过来再先手、打完就跑、集火、救人；[b]满血穿护甲的队友会站到僵尸和你之间替你挡[/b]，血少的不会。
 [*]打哪个部位：头 = 打死的概率；躯干 = 攻击力按比例下降（打到 0 就不能抓人）；腿 = 行动力按比例下降。
-[*]开枪会把附近最多 40 只僵尸引过来，这个代价算进收益里。
+[*]残废的僵尸（还会咬流血的人）会被补刀清掉；[b]武器磨损[/b]算进代价，不为一点点收益把武器磨坏。
+[*][b]没有能用的近战武器时，从你和其他队友包里拿一把多余的[/b]：每人至少留一把，不拿你最好的那把和你的最爱武器。
+[*]开枪会引来附近最多 40 只僵尸，这也算进代价。
 [*]站在门边、关门能明显少挨打就关门；离僵尸近的队友先行动。
 [*]僵尸能打到自己时不读书、制作、修理，留着 AP；自动穿上自己背包里有防御的衣物。
-[*]修了原版一个 bug：队友一步都走不了时，原版会报错、中断整个队友回合。
+[*]修了原版队友一步都走不了时报错、中断回合的 bug。
 [/list]
-[b]实测[/b]：在真实存档上和原版各带队打同样的场景（每场 8 回合，测试里的你站着不动、不还手），52 个没参与调参的场景合计：原版队友阵亡 5 次、掉血 287、你掉血 29.6；本 MOD 队友阵亡 0、掉血 22、你掉血 0。
+[b]实测[/b]：在真实存档上和原版各带队打同样的场景（每场 30 回合，不断有新僵尸过来），40 个没参与调参的场景合计：
+[list]
+[*]你站着不动不还手：原版队友阵亡 9 次、掉血 285、你掉血 8.7；本 MOD 队友阵亡 0、掉血 6、你掉血 0。
+[*]你由 AI 托管：原版队友阵亡 1 次、掉血 76、你掉血 21.7；本 MOD 队友阵亡 0、掉血 1.8、你掉血 0。
+[/list]
+击杀数和原版差不多。
 
 [h2]生存与协作[/h2]
 [list]
-[*][b]用药[/b]：HP 低于 50% 就治疗，药物强度不超过头痛线；濒危时放宽，但永远不到昏厥线。原版 HP 低于 5 才吃药，强度超标时还会给你弹「会昏厥」的确认框。
+[*][b]用药[/b]：HP 低于 50% 就治疗，药物强度不超过头痛线；濒危时放宽，但永远不到昏厥线。原版 HP 低于 5 才吃药。
 [*][b]互相治疗[/b]：给身边或走得到的你和其他队友包扎、用药，医生会用「急救」。不会为此走进僵尸攻击范围。
 [*][b]护卫[/b]：僵尸进入你周围 8 格内时，队友放下搜刮、升级、清障、修车、种田，先回到你身边。
-[*][b]拾取[/b]：原版默认只捡价值「高」以上的东西，弹药、绷带、药都不够格。现在另外会捡队伍里有对应武器的弹药和箭、药品绷带、比手上明显更好的近战武器；[b]不捡回你们自己丢下的东西[/b]；一回合走不到的先走一段；不进僵尸攻击范围。
+[*][b]拾取[/b]：原版默认只捡价值「高」以上的东西，弹药、绷带、药都不够格。现在另外会捡队伍里有对应武器的弹药和箭、药品绷带、比手上明显更好的近战武器；[b]不捡回你们自己丢下的东西[/b]；不进僵尸攻击范围。
 [/list]
 
 [h2]设置与日志[/h2]
 用记事本打开 <游戏目录>\companion_ai\companion_ai.py，改开头的数值（保护你的权重、怕挨打的程度、用药线、护卫距离、捡哪些东西等，每项都有说明），重启游戏生效。
-每次决策都会写进 <游戏目录>\companion_ai\companion_ai.log，例如「XX 用 斧头 打 僵尸 的头部（收益 6.3，回合结束预计损失 0.5）」「XX 关上门挡僵尸」「XX 捡起 弹药 ×3、绷带」。
+每次决策都会写进 <游戏目录>\companion_ai\companion_ai.log，例如「XX 用 斧头 打 僵尸 的头部（收益 6.3，回合结束预计损失 0.5）」。
 
 [h2]更新 / 卸载[/h2]
 [list]
 [*][b]MOD 更新或游戏更新后[/b]：再双击一次 install.bat。若提示“Python 运行库不匹配”，说明游戏升级了内置 Python，请等待 MOD 更新。
-[*][b]卸载[/b]：双击 uninstall.bat（没有其他 MOD 在用时游戏恢复原样），再取消订阅。MOD 会给你们拿过的物品加一个记号来认出「你们丢的东西」，随存档保存，卸载后不起作用，存档照常可用。
+[*][b]卸载[/b]：双击 uninstall.bat（没有其他 MOD 在用时游戏恢复原样），再取消订阅。MOD 给物品加的记号随存档保存，卸载后不影响存档。
 [/list]
 
 [h2]原理[/h2]
-安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库模块 linecache.pyc，换成“原样执行原代码 + MOD 加载器”的版本；安装包自带原始文件，卸载时用它还原。MOD 加载器与 [b]AI 托管主角[/b]、[b]队伍背包共享[/b] 等 MOD 共用，可以同时安装。MOD 源码（companion_ai.py）是明文。每个替换都有兜底：出错时改用原版逻辑，错误写进日志，反馈问题请附上。单机游戏。
+安装程序只修改一个文件：<游戏目录>\_internal\base_library.zip 里的 Python 标准库模块 linecache.pyc，换成“原样执行原代码 + MOD 加载器”的版本；安装包自带原始文件，卸载时用它还原。MOD 加载器与 [b]AI 托管主角[/b]、[b]队伍背包共享[/b] 等 MOD 共用，可以同时安装。MOD 源码（companion_ai.py）是明文。每个替换都有兜底：出错时改用原版逻辑，错误写进日志，反馈问题请附上。
 
 非官方 MOD，与开发商无关。
 
@@ -65,10 +72,11 @@ Workshop mods for this game can only contain data, so the game never runs this m
 [h2]What changes[/h2]
 [list]
 [*]Turn planning with the game's real rules: for every tile they can end on, the expected damage and death risk for the whole party in the next zombie turn (zombies chase the nearest person, swings left after walking and bashing doors, dodge, armor, and the fatal bite when bleeding at 0 AP). Your losses count 5x.
-[*]Each step compares target, weapon, body part, walking up first, and hit-and-run vs. fighting it out; they stop when it isn't worth it and end on the safest tile. Healthy armored companions body-block for you.
-[*]Body part by effect: head = kill chance, body = less attack power, legs = less action power. Gunshot noise (up to 40 zombies) is part of the cost.
+[*]Each step compares target, weapon, body part, walking up and hit-and-run vs. fighting on; they stop when it isn't worth it and end on the safest tile. Healthy armored companions body-block for you.
+[*]Body part by effect: head = kill chance, body = less attack power, legs = less action power. Gunshot noise (up to 40 zombies) and weapon wear are part of the cost; crippled zombies get finished off.
+[*]A companion with no usable melee weapon takes a spare one from the party (never your best or favorite).
 [*]Close doors when it helps, companions nearest to zombies act first, no chores while in reach, wear carried armor. Fixes a vanilla crash when a companion can't move.
 [*]Earlier, safer medication; bandaging and treating each other; doctors use First Aid; guarding you; picking up ammo, medicine and better melee weapons.
-[*]Tested on a real save vs. vanilla (52 unseen scenarios, 8 turns each, you standing still): companions lost 0 instead of 5, 22 HP instead of 287; you lost 0 HP instead of 29.6.
+[*]Tested on a real save vs. vanilla (40 unseen scenarios, 30 turns each, zombies keep coming). You standing still: companions lost 0 instead of 9 and 6 HP instead of 285; you lost 0 HP instead of 8.7. Under AI Takeover: 0 vs 1 companion deaths, 1.8 vs 76 HP, you 0 vs 21.7. Kills about the same.
 [/list]
 Settings are constants at the top of companion_ai.py; decisions are logged to companion_ai.log. After a mod or game update run install.bat again; to remove run uninstall.bat, then unsubscribe. Works together with AI Takeover and Shared Party Inventory. Unofficial mod.

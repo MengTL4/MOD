@@ -8,6 +8,9 @@ Terminus: Zombie Survivors - 队友 AI 加强 MOD
     流血且 AP 为 0 会被咬死；你的损失按 5 倍算），每一步比较打哪只、用什么、打哪个部位、
     要不要先走过去、打一下就走还是打到底，收益和风险都折算成 HP，打不划算就停手，最后站到风险最低的格子。
     撤退、等僵尸过来、打完就跑、集火、替你挡刀都由此而来
+  - 补刀：残废的僵尸（没了躯干不能抓人，但还会咬流血的人）也清掉，不会整队守着它不敢干别的
+  - 武器磨损算进代价：近战打中一下掉 6~8 点状态（打头 ×1.5），不为一点点收益把武器磨坏
+  - 没有能用的近战武器时，从你和其他队友包里拿一把多余的（每人至少留一把，不拿你最好的和最爱的）
   - 关门：站在门边、关上门能明显少挨打就关
   - 队友按顺序行动：离僵尸近的先行动，后面的人看着结果再决定
   - 选部位：头 = 打死的概率；躯干 = 攻击力按比例下降（打到 0 就不能抓）；腿 = 行动力按比例下降
@@ -91,6 +94,9 @@ CLOSE_DOORS = True
 ORDER_COMPANIONS = True
 # 下回合打不到任何人的僵尸，长远收益按这个权重算（它会自己走过来，那时我们先手）
 FUTURE_WEIGHT_IDLE = 0.5
+# 打死一只僵尸本身值多少 HP：残废的僵尸（没了躯干不能抓人）也还会咬流血的人、挡着你们搜刮，
+# 不补刀的话队伍会一直守着它不敢干别的
+CLEAR_VALUE = 2.0
 # 单只僵尸每回合威胁的上限（HP），防止大块头的长远收益大过死亡风险
 POTENTIAL_CAP = 12.0
 # 评估出手时，除了「打一下就停」，也考虑「把这回合能打的都打完」
@@ -112,6 +118,16 @@ QUIET_MIN_RATIO = 0.5
 # 僵尸能打到你的时候，不做读书、制作、修理、种田等花 AP 的杂事：
 # 留着 AP 不光能逃跑，回合结束时有 AP，僵尸的攻击有一部分会变成擒抱（扣 AP 不扣血）
 COMBAT_LOCK = True
+
+# 武器磨损：近战每打中一下掉 6~8 点状态（武器耐久越高掉得越少，打头 ×1.5），100 点的武器十来下就坏。
+# 每掉 1 点状态折算成多少 HP；身上只剩这一把能用的近战武器时按 WEAR_COST_LAST 算（坏了就只能干看着）
+WEAR_COST = 0.02
+WEAR_COST_LAST = 0.06
+
+# 队友身上没有能用的近战武器（没有、或状态都低于 ARM_MIN_CONDITION）时，从你和其他队友包里拿一把多余的：
+# 每人至少留一把，不拿你最好的那把，也不拿你设成「最爱」的武器
+ARM_FROM_PARTY = True
+ARM_MIN_CONDITION = 10
 
 # 自动穿上自己背包里有防御的衣物（衣物防御直接从僵尸每次伤害里减），总负重不超过这个值
 AUTO_DRESS = True
@@ -692,6 +708,21 @@ def attack_ap_cost(char, weapon, zombie, part):
     return 1 + get_attack_ap(char, weapon, zombie, part)
 
 
+def wear_cost(char, weapon, part, acc):
+    """打这一下预计的武器磨损，折算成 HP（照游戏的 degrade_condition_melee，打空不磨损，不含技能减免）。"""
+    if WEAR_COST <= 0 or weapon.atktype != "melee":
+        return 0.0
+    low, high = getattr(weapon, "condition_loss_combat", None) or (0, 0)
+    loss = (low + high) / 2 * (1 - (getattr(weapon, "durability", 0) or 0) / 13)
+    try:
+        config = dt().balance_config
+        loss = max(config.get("melee_condition_loss_min", 0), loss) * config.get("condition_loss_mult", {}).get(part, 1)
+    except Exception:
+        pass
+    spare = any(i is not weapon for i in usable_melee(char.items))
+    return acc * min(loss, getattr(weapon, "condition", 0) or 0) * (WEAR_COST if spare else WEAR_COST_LAST)
+
+
 def in_reach(weapon, cell, target_cell):
     ca = STATE.ca
     reach = weapon.reach if weapon.atktype == "melee" else weapon.range
@@ -752,13 +783,16 @@ def best_option(board, end_now):
             attacks = max(1, min(6, math.ceil(spare / attack_ap_cost(char, weapon, zombie, "head"))))
             # 下回合的效果（它少打谁几下、打死了就不打了）由 weaken 在整个队伍的回合结束风险里体现，
             # 这里的收益只算长远的：它以后几回合少造成的伤害
-            part, gain, now, value = None, 0.0, 0.0, None
+            part, gain, now, value, wear = None, 0.0, 0.0, None, 0.0
             for p in PARTS:
-                p_now, p_later, _ = hit_effect(char, weapon, ammo, zombie, p, attacks)
+                p_now, p_later, p_acc = hit_effect(char, weapon, ammo, zombie, p, attacks)
                 g = (FUTURE_WEIGHT if zombie in urgent else FUTURE_WEIGHT_IDLE) * zombie_potential(zombie) * p_later
-                v = g + zombie_potential(zombie) * p_now     # 只用来先挑部位
+                if p == "head":
+                    g += CLEAR_VALUE * p_now     # p_now 是平均每下打死的概率
+                p_wear = wear_cost(char, weapon, p, p_acc)
+                v = g + zombie_potential(zombie) * p_now - p_wear     # 只用来先挑部位
                 if value is None or v > value:
-                    part, gain, now, value = p, g, p_now, v
+                    part, gain, now, value, wear = p, g, p_now, v, p_wear
             if value <= 0:
                 continue
             cost = attack_ap_cost(char, weapon, zombie, part)
@@ -766,10 +800,10 @@ def best_option(board, end_now):
             for cell, pathdic in spots:
                 move = pathdic["ap"] if pathdic else 0
                 # 打这一下就停手（打完还能跑）
-                plans = [(1, now, gain, extra)]
+                plans = [(1, now, gain, extra + wear)]
                 if COMMIT_PLANNING and attacks > 1:
                     # 打完这回合能打的（AP 用光）；用 attacks 下累计的效果
-                    plans.append((attacks, min(1.0, now * attacks), gain * attacks, extra + (AMMO_COST * (attacks - 1) if ranged else 0.0)))
+                    plans.append((attacks, min(1.0, now * attacks), gain * attacks, extra + wear * attacks + (AMMO_COST * (attacks - 1) if ranged else 0.0)))
                 for n, effect, g, cost_extra in plans:
                     end = outcome_risk(board, cell, max(0.0, char.ap - move - cost * n), zombie, part, effect)
                     score = g - (end - end_now) - cost_extra - MOVE_AP_COST * move
@@ -1188,6 +1222,10 @@ def handle_medication(comp):
         dress_up(comp)
     except Exception:
         log_exc("穿护甲", once=True)
+    try:
+        arm_up(comp)
+    except Exception:
+        log_exc("拿武器", once=True)
     if not settings(comp).get("use_medical_supplies"):
         return
     try:
@@ -1225,6 +1263,42 @@ def remember_party_items(char):
 
 def is_melee(item):
     return getattr(item, "atktype", None) == "melee" and hasattr(item, "damage")
+
+
+def usable_melee(items):
+    return [i for i in items if is_melee(i) and (getattr(i, "condition", 0) or 0) >= ARM_MIN_CONDITION]
+
+
+def arm_up(comp):
+    """身上没有能用的近战武器时，从你和其他队友包里拿一把多余的（每人至少留一把，不拿你最好的和最爱的）。"""
+    if not ARM_FROM_PARTY or comp is dt().game.player or usable_melee(comp.items):
+        return
+    best = None
+    for member in party(comp):
+        if member is comp:
+            continue
+        mine = usable_melee(own_items(member))
+        if len(mine) < 2:
+            continue
+        keep = max(mine, key=melee_score)
+        favorite = getattr(member, "favorite_weapon", None)     # 游戏里是 (武器, 时间, 名字)
+        favorite = favorite[0] if isinstance(favorite, (tuple, list)) and favorite else favorite
+        for item in mine:
+            if item is keep or item is favorite:
+                continue
+            if best is None or melee_score(item) > melee_score(best[1]):
+                best = (member, item)
+    if best is None:
+        return
+    member, item = best
+    source, target = getattr(member, "_items", None), getattr(comp, "_items", None)
+    if source is None or target is None:
+        return
+    source.remove(item)
+    list.append(target, item)        # 不弹「获得物品」提示
+    if hasattr(target, "check"):
+        target.check()
+    decision("%s 手上没有能用的武器，从 %s 包里拿了 %s" % (name_of(comp), name_of(member), name_of(item)))
 
 
 def melee_score(item):
@@ -1590,7 +1664,7 @@ def patch_compaction(module):
             continue
         setattr(module, name, make_guarded(name, current))
     module._companion_ai_patched = True
-    log("已替换队友 AI：回合规划（威胁模型、选目标 / 武器 / 部位 / 站位）、安静作战、用药与互相治疗、自动穿护甲、护卫、拾取、战斗时不做杂事")
+    log("已替换队友 AI：回合规划（威胁模型、选目标 / 武器 / 部位 / 站位）、安静作战、用药与互相治疗、自动穿护甲、没武器时从队伍拿、护卫、拾取、战斗时不做杂事")
 
 
 PATCHERS = {
