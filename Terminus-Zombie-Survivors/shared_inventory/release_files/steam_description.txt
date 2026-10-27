@@ -2,6 +2,8 @@
 
 主角和所有队友的背包合并成一个大背包。打开任何人的背包都能用全队的物品；做饭、制作、修理、用药时不用再来回倒腾东西，队友 AI 也会从全队物品里找吃的、药和材料。
 
+[b]⚠ 游戏每次更新后本 MOD 都会失效：退出游戏，再双击一次 install.bat 就能恢复。[/b]
+
 [h2]⚠ 需要手动安装（订阅后不会自动生效）[/h2]
 游戏的创意工坊模组只支持数据（JSON/图片），不会执行代码，所以本 MOD 需要运行一次安装程序。[b]游戏内模组管理器里的开关对本 MOD 无效。[/b]
 
@@ -45,6 +47,8 @@
 
 [h1]Shared Party Inventory[/h1]
 Your character's and all companions' inventories become one shared pool. Any inventory screen shows the whole party's items, crafting/cooking/repairs/medicine use them, and the companion AI eats, heals and crafts from the shared pool too. Used items are taken from whoever actually carries them - nothing is duplicated.
+
+[b]⚠ Every game update turns this mod off: quit the game and run install.bat again.[/b]
 
 [h2]⚠ Manual install required[/h2]
 Workshop mods for this game can only contain data, so the game never runs this mod by itself, and its switch in the in-game mod manager does nothing.

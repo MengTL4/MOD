@@ -2,6 +2,8 @@
 
 在游戏自带的队友 AI 上替换几个做决定的环节，其余照原版，并尊重游戏的「同伴AI设置」。[b]AI 托管主角[/b] MOD 控制主角时同样生效。
 
+[b]⚠ 游戏每次更新后本 MOD 都会失效：退出游戏，再双击一次 install.bat 就能恢复。[/b]
+
 [h2]⚠ 需要手动安装（订阅后不会自动生效）[/h2]
 创意工坊模组只能放数据、不会执行代码，所以要运行一次安装程序。[b]游戏内模组管理器里的开关对本 MOD 无效。[/b]
 
@@ -61,6 +63,8 @@
 [h1]Smarter Companion AI[/h1]
 Replaces a few decision points of the built-in companion AI and keeps the rest vanilla. Respects the game's own companion automation settings. Also applies to the player under the AI Takeover mod.
 
+[b]⚠ Every game update turns this mod off: quit the game and run install.bat again.[/b]
+
 [h2]⚠ Manual install required[/h2]
 Workshop mods for this game can only contain data, so the game never runs this mod by itself, and its switch in the in-game mod manager does nothing.
 [list]
@@ -80,4 +84,4 @@ Workshop mods for this game can only contain data, so the game never runs this m
 [*]Earlier, safer medication; bandaging and treating each other; doctors use First Aid; guarding you; picking up ammo, medicine and better melee weapons.
 [*]Tested on a real save vs. vanilla (40 unseen scenarios, 30 turns each, zombies keep coming). You standing still: companions lost 0 instead of 9 and 6 HP instead of 285; you lost 0 HP instead of 8.7. Under AI Takeover: 0 vs 1 companion deaths, 1.8 vs 76 HP, you 0 vs 21.7. Kills about the same.
 [/list]
-Settings are constants at the top of companion_ai.py; decisions are logged to companion_ai.log. After a mod or game update run install.bat again; to remove run uninstall.bat, then unsubscribe. Works together with AI Takeover and Shared Party Inventory. Unofficial mod.
+Settings are constants at the top of companion_ai.py; decisions are logged to companion_ai.log. To remove, run uninstall.bat, then unsubscribe. Works together with AI Takeover and Shared Party Inventory. Unofficial mod.
