@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Headless stand-in for UnityEngine, DOTween, TMP, etc. Manual/ is hand-written behaviour;
+       Generated/ is produced by tools/ShimGen (run "ShimGen generate" after a game update). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>UnityEngine</RootNamespace>
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0618;CS0660;CS0661;CS8981;SYSLIB0050</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lonestar.Rng\Lonestar.Rng.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    游戏内 mod 本体。
+    netstandard2.1 与游戏/官方 mod 框架保持一致（工坊里的 mod 也是这个目标框架）。
+    编译产物：LonestarPlanner.dll + mod.json → 丢进
+      %LocalLow%\Shuxi\LONESTAR\Mods\Dev\LonestarPlanner\
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>LonestarPlanner</AssemblyName>
+    <RootNamespace>LonestarPlanner.Mod</RootNamespace>
+
+    <!-- 游戏安装位置；换机器/换盘符时改这里或用 -p:GameManaged=... -->
+    <GameManaged Condition="'$(GameManaged)' == ''">F:\SteamLibrary\steamapps\common\LONESTAR\LONESTAR_Data\Managed</GameManaged>
+    <!-- 同仓库的求解器（无头引擎 + Brain 服务）。录制器源码直接从那里链接，保证游戏内和无头端快照逻辑完全一致。 -->
+    <SolverRoot Condition="'$(SolverRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\solver</SolverRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 战斗录制器（SolverLogger）：Brain 服务靠它写出的实时战斗文件同步状态 -->
+    <Compile Include="$(SolverRoot)\src\SolverLogger\Log.cs" Link="Recorder\Log.cs" />
+    <Compile Include="$(SolverRoot)\src\SolverLogger\Dump.cs" Link="Recorder\Dump.cs" />
+    <Compile Include="$(SolverRoot)\src\SolverLogger\Snapshot.cs" Link="Recorder\Snapshot.cs" />
+    <Compile Include="$(SolverRoot)\src\SolverLogger\Patches.cs" Link="Recorder\Patches.cs" />
+    <Compile Include="$(SolverRoot)\src\SolverLogger\Recorder.cs" Link="Recorder\Recorder.cs" />
+    <Compile Include="$(SolverRoot)\src\SolverLogger\Paint.cs" Link="Recorder\Paint.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Planner.Core\Planner.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 游戏程序集：编译期引用，不复制到输出目录（运行时由游戏自己提供） -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(GameManaged)\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameManaged)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="LeanLocalization">
+      <HintPath>$(GameManaged)\LeanLocalization.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(GameManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(GameManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(GameManaged)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(GameManaged)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

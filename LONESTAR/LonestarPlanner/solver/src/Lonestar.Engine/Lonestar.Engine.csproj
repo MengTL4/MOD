@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Headless battle host. It compiles the in-game recorder's sources (SolverLogger) unchanged,
+       so a headless replay is recorded by exactly the same hooks as the real game and the two
+       logs can be diffed record by record. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <DefineConstants>$(DefineConstants);HEADLESS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\SolverLogger\Log.cs" Link="Recorder\Log.cs" />
+    <Compile Include="..\SolverLogger\Dump.cs" Link="Recorder\Dump.cs" />
+    <Compile Include="..\SolverLogger\Snapshot.cs" Link="Recorder\Snapshot.cs" />
+    <Compile Include="..\SolverLogger\Patches.cs" Link="Recorder\Patches.cs" />
+    <Compile Include="..\SolverLogger\Recorder.cs" Link="Recorder\Recorder.cs" />
+    <Compile Include="..\SolverLogger\Paint.cs" Link="Recorder\Paint.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Real Harmony for the recorder hooks, aliased: the game itself sees the shim's 2.2.2-compatible HarmonyLib. -->
+    <PackageReference Include="Lib.Harmony" Version="2.4.3" Aliases="RealHarmony" />
+    <ProjectReference Include="..\Lonestar.Game\Lonestar.Game.csproj" />
+    <ProjectReference Include="..\Lonestar.UnityShim\Lonestar.UnityShim.csproj" />
+  </ItemGroup>
+
+</Project>

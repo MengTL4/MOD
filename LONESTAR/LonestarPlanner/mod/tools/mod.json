@@ -1,0 +1,7 @@
+{
+  "modID": "LonestarPlanner",
+  "displayName": "战术求解器 | Tactics Solver",
+  "version": "1.1.1",
+  "description": "[h2]战术求解器 | Tactics Solver[/h2]\n在真实游戏引擎里把这场战斗提前打一遍，告诉你每一步怎么走、船怎么摆。\n\n[b]战斗[/b]\n[list]\n[*]每回合给出完整操作顺序（装能量、移动、交换、技能），并直接画在棋盘上\n[*]预测结局：第几回合获胜、剩多少血；每条对撞线的胜负\n[*]一键执行本回合，或开启自动接管（F7）\n[*]不是估算公式：求解器运行的就是游戏自己的战斗代码，并多回合前瞻\n[/list]\n[b]船坞[/b]\n[list]\n[*]针对下一场悬赏，在引擎里试遍各种摆法（谁上船、放哪格），选打得最好的\n[*]对比推荐摆位和当前摆位的结局，一键摆放（执行前自动备份）\n[/list]\n[b]快捷键[/b]  F5 下一步 · F7 自动 · F8 显示/隐藏 · F6 船坞摆放（按两次）\n\n[b]说明[/b]\n[list]\n[*]求解器在后台以低优先级占用多核 CPU，游戏本身不卡；求解时间可在面板或 Mod 设置里调\n[*]自带运行环境，无需额外安装；目前仅支持 Windows\n[*]游戏更新后求解器可能需要随 mod 更新，面板会提示\n[/list]\n\n[h2]English[/h2]\nPlays the battle ahead of you in the real game engine and tells you exactly what to do.\n[list]\n[*]Battle: the full order of actions for each turn (energy, moves, swaps, skills), drawn on the board, with the predicted outcome. Play a turn with one click or let it auto-play (F7).\n[*]Dock: tries many loadouts against your next bounty in the engine and applies the best one (your old layout is backed up).\n[*]Keys: F5 step, F7 auto, F8 show/hide, F6 apply in the dock (press twice).\n[*]The solver runs in the background at low priority on all CPU cores. Windows only. Nothing else to install.",
+  "author": "Tactics Solver"
+}

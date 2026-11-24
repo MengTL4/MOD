@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Compiled against the game's own Mono class libraries, not a .NET Framework targeting pack. -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>SolverLogger</AssemblyName>
+    <RootNamespace>SolverLogger</RootNamespace>
+    <GameDir Condition="'$(GameDir)' == ''">F:\SteamLibrary\steamapps\common\LONESTAR</GameDir>
+    <Managed>$(GameDir)\LONESTAR_Data\Managed</Managed>
+    <ModDeployDir Condition="'$(ModDeployDir)' == ''">$(USERPROFILE)\AppData\LocalLow\Shuxi\LONESTAR\Mods\Dev\SolverLogger</ModDeployDir>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <FrameworkPathOverride>$(Managed)</FrameworkPathOverride>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="mscorlib" HintPath="$(Managed)\mscorlib.dll" Private="false" />
+    <Reference Include="System" HintPath="$(Managed)\System.dll" Private="false" />
+    <Reference Include="System.Core" HintPath="$(Managed)\System.Core.dll" Private="false" />
+    <Reference Include="netstandard" HintPath="$(Managed)\netstandard.dll" Private="false" />
+    <Reference Include="Assembly-CSharp" HintPath="$(Managed)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="Assembly-CSharp-firstpass" HintPath="$(Managed)\Assembly-CSharp-firstpass.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(Managed)\0Harmony.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(Managed)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="UnityEngine.IMGUIModule" HintPath="$(Managed)\UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="UnityEngine.UIModule" HintPath="$(Managed)\UnityEngine.UIModule.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="mod.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="DeployMod" AfterTargets="Build">
+    <MakeDir Directories="$(ModDeployDir)" />
+    <Copy SourceFiles="$(TargetPath);$(OutDir)mod.json;..\..\data\resources_index.tsv" DestinationFolder="$(ModDeployDir)" />
+    <Message Importance="high" Text="Deployed SolverLogger to $(ModDeployDir)" />
+  </Target>
+
+</Project>
+
