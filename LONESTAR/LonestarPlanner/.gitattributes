@@ -1,0 +1,4 @@
+# The two halves keep the line-ending rules they had as separate repos:
+# solver/ stores files byte for byte (LF), mod/ normalises to LF and checks out per core.autocrlf.
+solver/** -text
+mod/** text=auto

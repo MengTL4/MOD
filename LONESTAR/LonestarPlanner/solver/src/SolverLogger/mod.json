@@ -1,0 +1,7 @@
+{
+  "modID": "LonestarSolver.Logger",
+  "displayName": "Solver Logger",
+  "description": "Records RNG streams, energy-deck draws and battle flow for the battle solver (phase 0 verification).",
+  "version": "0.1.0",
+  "author": "LonestarSolver"
+}

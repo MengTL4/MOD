@@ -1,0 +1,10 @@
+decompiled/
+bin/
+obj/
+*.user
+out/
+
+# game code and assets: generated locally from your own install, never published
+# (decompile.ps1 -> decompiled/, ShimGen rewrite -> Rewritten/, in-game AssetExporter -> data/export/)
+data/export/
+src/Lonestar.Game/Rewritten/

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    纯逻辑核心：不引用 UnityEngine / 游戏程序集。
+    这样它可以被单元测试直接驱动，也可以被 Mod 直接引用（同一个 DLL）。
+    netstandard2.1 是为了和 Unity 2021.3 + 官方 mod 框架保持一致。
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>LonestarPlanner.Core</AssemblyName>
+    <RootNamespace>LonestarPlanner.Core</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

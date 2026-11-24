@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The game's own scripts (decompiled/, see scripts/decompile.ps1), compiled unmodified
+       against the headless Unity shim. Nothing in decompiled/ is edited by hand. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Lonestar.Game</AssemblyName>
+    <RootNamespace></RootNamespace>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0162;CS0168;CS0169;CS0219;CS0414;CS0618;CS0649;CS0659;CS0660;CS0661;CS0672;CS1998;CS8981;SYSLIB0011;SYSLIB0050;SYSLIB0051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\decompiled\Assembly-CSharp\**\*.cs" Exclude="..\..\decompiled\Assembly-CSharp\Properties\**;..\..\decompiled\Assembly-CSharp\obj\**" />
+    <Compile Include="..\..\decompiled\Assembly-CSharp-firstpass\**\*.cs" Exclude="..\..\decompiled\Assembly-CSharp-firstpass\Properties\**;..\..\decompiled\Assembly-CSharp-firstpass\obj\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lonestar.UnityShim\Lonestar.UnityShim.csproj" />
+  </ItemGroup>
+
+  <!-- Mechanical Mono→.NET fixes (tools/ShimGen rewrite). -->
+  <Import Project="Rewritten.props" Condition="Exists('Rewritten.props')" />
+
+</Project>
