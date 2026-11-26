@@ -28,6 +28,10 @@ repairs, farming, eating and drinking. It never changes maps, drives or trades.
 "AI behavior settings" opens the game's companion automation panel for your character
 (the master switch at the top of that panel does nothing for the main character).
 Continuous mode stops below 35% HP and pauses while a popup is open.
+During an AI turn, notices such as "tool broke" or "perk/stat gained from a book" float above
+your character instead of opening popups you could not click; the level-up perk choice opens
+after the AI turn. If the AI makes no progress for 40 seconds it stops and hands control back,
+writing thread stacks to ai_takeover.log.
 
 AFTER A MOD OR GAME UPDATE
 Run install.bat again. If it reports a Python runtime mismatch, wait for a mod update.
