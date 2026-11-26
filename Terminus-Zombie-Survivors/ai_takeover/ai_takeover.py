@@ -12,11 +12,20 @@ Terminus: Zombie Survivors - 主角 AI 托管 MOD
 可以单独设置主角要不要攻击、搜刮价值阈值、吃喝/睡觉/读书/种田等。
 （面板顶部的总开关对主角无意义，忽略即可。）
 
+托管回合跑在玩家回合里，而原版有一批只在玩家回合才弹的窗口（工具碎裂、读完书获得技能/属性、
+学会配方、重读确认、升级选技能）。托管期间玩家输入是关着的，这些弹窗点不掉，重读确认框还会让
+AI 0 AP 反复「读完」同一本书。所以托管期间：普通弹窗改成头顶飘字，重读和队友一样直接重读，
+升级选技能等回合交还后再弹。另有卡住保护：AI 行动时 AP 和位置长时间不变就中止托管、交还操作，
+并把所有线程的调用栈写进日志。
+
 本文件由 base_library.zip 中的引导代码在游戏启动时加载，出错会写入同目录的 ai_takeover.log，
 不会让游戏崩溃。
 """
 
+import ctypes
 import os
+import re
+import sys
 import threading
 import time
 import traceback
@@ -35,13 +44,25 @@ CONTINUOUS_STOP_HP_RATIO = 0.35
 # 持续托管时，每个玩家回合开始后等待多少秒再接管（方便看清局势、随时按 F6 叫停）
 CONTINUOUS_DELAY = 0.6
 
+# AI 行动时主角的 AP、位置、物品、士气这么多秒都没变化，就认为卡住：中止托管并交还操作
+STALL_TIMEOUT = 40.0
+
+# 结束回合（队友、NPC、僵尸行动）超过这么多秒，把各线程调用栈写进日志（只记录，不打断）
+SLOW_TURN_DUMP = 90.0
+
 # ----------------------------------------------------------------------------
 
 ACTION = "ai_takeover"
 MOD_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # MOD 加载器据此决定把哪些游戏模块的加载事件通知给本 MOD
-PATCH_TARGETS = ("ui.panels.actionpanel", "scenes.main")
+PATCH_TARGETS = (
+    "ui.panels.actionpanel",
+    "scenes.main",
+    "ui.popups.defaultpopup",
+    "ui.popups.perkpopup",
+    "core.item.book",
+)
 LOG_PATH = os.path.join(MOD_DIR, "ai_takeover.log")
 
 # 13x13 图标，与原生动作图标同色同尺寸
@@ -89,15 +110,36 @@ TEXT = {
     "float_cont_off": ("持续托管：关", "持續託管：關", "Continuous AI: OFF"),
     "float_hp_stop": ("HP 过低，停止持续托管", "HP 過低，停止持續託管", "HP low, continuous AI stopped"),
     "float_error": ("AI 托管出错（见 ai_takeover.log）", "AI 託管出錯（見 ai_takeover.log）", "AI takeover error (see ai_takeover.log)"),
+    "float_stalled": (
+        "AI 托管卡住，已停止，请手动操作（见 ai_takeover.log）",
+        "AI 託管卡住，已停止，請手動操作（見 ai_takeover.log）",
+        "AI takeover got stuck and stopped, please act manually (see ai_takeover.log)",
+    ),
+    "float_endturn_error": (
+        "结束回合出错，已交还操作（见 ai_takeover.log）",
+        "結束回合出錯，已交還操作（見 ai_takeover.log）",
+        "Ending the turn failed, control returned (see ai_takeover.log)",
+    ),
     "cause_state": ("主角当前无法行动", "主角目前無法行動", "Your character can't act right now"),
 }
 
 
+class AIStalled(BaseException):
+    """看门狗注入 AI 线程的异常。继承 BaseException，免得被游戏或其他 MOD 的 except Exception 吞掉。"""
+
+
 class _State:
     busy = False            # AI 正在行动 / 正在结束回合
+    acting = False          # AI 正在替主角行动（这期间的弹窗改成飘字）
     continuous = False      # 持续托管开关
     ready_since = None      # 持续托管：本回合可接管的起始时间
     logged = set()          # 每帧调用处的错误只记录一次
+    worker = None           # 当前 AI 回合线程
+    guard_lock = threading.Lock()
+    guard_armed = False     # 看门狗可以向 AI 线程注入 AIStalled
+    pending_perk = None     # 托管期间升级：(perk_popup, 角色)，回合交还后再弹
+    orig_perk_open = None
+    task = ""               # 正在执行的子任务（写进卡住时的诊断日志）
 
 
 STATE = _State()
@@ -204,6 +246,7 @@ def run_ai_for(char):
     char.intention = None
     tasks = []
     try:
+        STATE.task = "medication"
         ca.handle_medication(char)
         if not char.sleeping:
             for name, check, _ in TASKS:
@@ -211,15 +254,18 @@ def run_ai_for(char):
                     tasks.append(name)
         handlers = {name: handle for name, _, handle in TASKS}
         for name in tasks:
+            STATE.task = name
             getattr(ca, handlers[name])(char)
             if name == "sleep" and char.sleeping:
                 break
         if not char.sleeping:
+            STATE.task = "food_and_drink"
             ca.handle_food_consumption(char)
             ca.handle_hydration(char)
             ca.handle_alcohol_consumption(char)
     finally:
         scene.active_companion = False
+        STATE.task = ""
     return tasks
 
 
@@ -229,24 +275,236 @@ def wait_idle(scene, timeout=15.0):
         time.sleep(0.05)
 
 
+# ----------------------------------------------------------------------------
+# 卡住保护与诊断
+# ----------------------------------------------------------------------------
+
+def describe_state(scene, char):
+    parts = []
+    for label, get in (
+        ("task", lambda: STATE.task),
+        ("turn", lambda: scene.turn),
+        ("allow_player_input", lambda: scene.allow_player_input),
+        ("open_modals", lambda: [type(m).__name__ for m in scene.open_modals]),
+        ("ap", lambda: char.ap),
+        ("cell", lambda: getattr(char.cell, "pos", char.cell)),
+        ("is_animating", lambda: char.spr.is_animating if char.spr else None),
+        ("time_reserved_funcs", lambda: len(char.spr.time_reserved_funcs) if char.spr else None),
+        ("char_animating", lambda: scene.char_animating),
+    ):
+        try:
+            parts.append("%s=%r" % (label, get()))
+        except Exception as e:
+            parts.append("%s=<%s>" % (label, type(e).__name__))
+    return ", ".join(parts)
+
+
+def dump_threads(reason, scene=None, char=None):
+    """把所有线程的调用栈写进日志，方便排查卡死。"""
+    try:
+        frames = sys._current_frames()
+        lines = ["%s，各线程调用栈：" % reason]
+        if scene is not None and char is not None:
+            lines.append("状态: " + describe_state(scene, char))
+        for th in threading.enumerate():
+            frame = frames.get(th.ident)
+            if frame is None:
+                continue
+            lines.append("--- 线程 %s ---" % th.name)
+            lines.append("".join(traceback.format_stack(frame)).rstrip())
+        log("\n".join(lines))
+    except Exception:
+        log_exc("dump_threads")
+
+
+def _async_exc(thread, exc):
+    """向线程注入异常（exc=None 表示撤销尚未触发的注入）。游戏自己的回合看门狗也用这个办法。"""
+    ident = getattr(thread, "ident", None)
+    if ident is None:
+        return 0
+    obj = None if exc is None else ctypes.py_object(exc)
+    return ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_ulong(ident), obj)
+
+
+def arm_guard(worker):
+    with STATE.guard_lock:
+        STATE.worker = worker
+        STATE.guard_armed = True
+
+
+def disarm_guard():
+    """关掉看门狗（AI 线程自己调用）。注入只在加锁且未关闭时发生，这里再撤销已注入但还没触发的，
+    所以之后的结束回合不会被打断。"""
+    with STATE.guard_lock:
+        STATE.guard_armed = False
+        _async_exc(threading.current_thread(), None)
+
+
+def progress_signature(char):
+    """AI 是否还在推进：AP、位置、物品数、物品耐久总和、士气。修工具、听音乐这类不耗 AP 的连续动作
+    会改变后几项，不会被误判为卡住。读取失败时返回新对象，按「有进展」处理。"""
+    try:
+        items = list(char.items)
+        cond = sum(float(getattr(i, "condition", 0) or 0) for i in items)
+        return (round(float(char.ap), 3), id(char.cell), bool(char.sleeping), len(items),
+                round(cond, 1), round(float(getattr(char, "morale", 0) or 0), 2))
+    except Exception:
+        return object()
+
+
+def watchdog(scene, char, worker):
+    """AI 行动期间 AP / 位置长时间不变 → 中止；结束回合太久 → 只记录调用栈。"""
+    last = progress_signature(char)
+    since = time.time()
+    started = since
+    slow_dumped = False
+    while worker.is_alive():
+        time.sleep(0.5)
+        now = time.time()
+        with STATE.guard_lock:
+            armed = STATE.guard_armed and STATE.worker is worker
+        if not armed:
+            if not slow_dumped and now - started > SLOW_TURN_DUMP:
+                slow_dumped = True
+                dump_threads("托管回合已持续 %.0f 秒（可能卡在结束回合）" % (now - started), scene, char)
+            continue
+        sig = progress_signature(char)
+        if sig != last:
+            last, since = sig, now
+            continue
+        if now - since < STALL_TIMEOUT:
+            continue
+        dump_threads("AI 行动 %.0f 秒没有进展（AP、位置、物品都没变），中止本回合托管" % (now - since), scene, char)
+        with STATE.guard_lock:
+            injected = STATE.guard_armed and STATE.worker is worker and worker.is_alive()
+            if injected:
+                STATE.guard_armed = False
+                _async_exc(worker, AIStalled)
+        if injected:
+            worker.join(10.0)
+            if worker.is_alive():
+                # 线程卡在原生调用里，注入的异常落不下去：至少把操作交还给玩家（托管按钮会一直不可用）
+                dump_threads("AI 线程无法中止，强制交还操作", scene, char)
+                STATE.continuous = False
+                scene.allow_player_input = True
+                float_text(char, t("float_stalled"))
+
+
+def reset_player_sprite(char):
+    """卡住后在主线程收拾主角的动画状态（尽力而为）。"""
+    spr = getattr(char, "spr", None)
+    if not spr or not spr.is_animating:
+        return
+    log("主角动画仍未结束，强制收尾: " + describe_state(spr.scene, char))
+    try:
+        if getattr(spr, "is_upgrading", False):
+            spr.stop_upgrading()
+        # 立即执行尚未执行的动画回调（与游戏「快速移动」相同），再清掉动画状态
+        if hasattr(spr, "force_finish_move"):
+            spr.force_finish_move()
+    except Exception:
+        log_exc("收尾主角动画")
+    try:
+        spr.time_reserved_funcs.clear()
+        spr.pos_reserved_funcs.clear()
+        spr.set_center()
+        get_origin = getattr(sys.modules.get("sprites.charsprite"), "get_origin", None)
+        if get_origin is not None:
+            spr.origin = get_origin(char)
+    except Exception:
+        log_exc("复位主角动画")
+    spr.is_animating = False
+
+
+def recover_from_stall(scene, char):
+    from data import dt
+    STATE.continuous = False
+    STATE.ready_since = None
+    deadline = time.time() + 2.0
+    while time.time() < deadline and char.spr and char.spr.is_animating:
+        time.sleep(0.05)
+    if char.spr and char.spr.is_animating:
+        queue = getattr(scene, "task_queue", None)
+        if queue is not None:
+            queue.append(partial(reset_player_sprite, char))
+            deadline = time.time() + 2.0
+            while time.time() < deadline and char.spr and char.spr.is_animating:
+                time.sleep(0.05)
+    if dt.scene is scene:
+        scene.allow_player_input = True
+        float_text(char, t("float_stalled"))
+    log("已中止托管并交还操作（本回合未结束，持续托管已关闭）")
+
+
+def end_turn_safely(scene, char):
+    """结束回合。原版结束回合出异常后会一直不能操作，这里把回合交还给玩家。"""
+    from actions import turn as turn_mod
+    from data import dt
+
+    end_turn = getattr(turn_mod, "_end_turn", None)
+    handle_error = getattr(turn_mod, "handle_error", None)
+    if end_turn is None or handle_error is None:
+        turn_mod.try_end_turn_except_handle_error()
+        return
+    try:
+        end_turn()
+        return
+    except SystemExit:
+        # 游戏自己的低帧率看门狗终止了回合线程，它已经把回合交还给玩家
+        handle_error("TURNLOOP")
+        return
+    except Exception:
+        log_exc("结束回合（队友 / NPC / 僵尸行动）")
+        try:
+            handle_error("ENDTURN")
+        except Exception:
+            pass
+    if dt.scene is scene and (scene.turn != "player" or not scene.allow_player_input):
+        log("结束回合中途出错，强制交还玩家回合: " + describe_state(scene, char))
+        STATE.continuous = False
+        scene.turn = "player"
+        scene.allow_player_input = True
+        try:
+            turn_mod.mouse.show()   # actions.turn 里的 system.mouse
+        except Exception:
+            pass
+        float_text(char, t("float_endturn_error"))
+
+
 def ai_turn_worker(scene, char):
     from actions import turn as turn_mod
     from data import dt
 
+    worker = threading.current_thread()
+    stalled = False
     try:
         try:
-            tasks = run_ai_for(char)
-            log("AI 回合完成，执行任务: %s" % (", ".join(tasks) or "无"))
-            wait_idle(scene)
+            try:
+                arm_guard(worker)
+                threading.Thread(target=watchdog, args=(scene, char, worker), daemon=True).start()
+                try:
+                    tasks = run_ai_for(char)
+                finally:
+                    disarm_guard()
+                log("AI 回合完成，执行任务: %s" % (", ".join(tasks) or "无"))
+                wait_idle(scene)
+            except AIStalled:
+                disarm_guard()
+                stalled = True
+            finally:
+                STATE.acting = False
         except Exception:
             log_exc("AI 行动")
             STATE.continuous = False
             float_text(char, t("float_error"))
             scene.allow_player_input = True
             return
+        if stalled:
+            recover_from_stall(scene, char)
+            return
         if dt.scene is not scene or not turn_mod.check_player_alive():
             return
-        turn_mod.try_end_turn_except_handle_error()
+        end_turn_safely(scene, char)
     finally:
         STATE.busy = False
 
@@ -296,6 +554,7 @@ def start_ai_turn(scene):
         scene.tutorial.close_btn.callback()
     soundplay("endturn")
     STATE.busy = True
+    STATE.acting = True
     STATE.ready_since = None
     scene.allow_player_input = False
     float_text(player, t("float_turn"))
@@ -345,6 +604,106 @@ def open_menu(scene):
         {"text": t("menu_settings"), "func": partial(scene.comp_auto_modal.set_and_open, dt.game.player)},
     ]
     scene.context_menu.set_and_open(menus)
+
+
+# ----------------------------------------------------------------------------
+# 托管期间的弹窗
+# ----------------------------------------------------------------------------
+
+def plain_text(text):
+    text = re.sub(r"<br\s*/?>", "\n", str(text or ""), flags=re.I)
+    return re.sub(r"<[^>]*>", "", text).strip()
+
+
+def swallow_popup(popup):
+    """托管期间不打开 scene.popup（玩家输入关着，点不掉），改成在主角头顶飘字。"""
+    from data import dt
+    title = plain_text(getattr(popup, "title", ""))
+    content = plain_text(getattr(popup, "content", ""))
+    log("托管中的弹窗改为飘字：%s｜%s" % (title, content.replace("\n", " / ")))
+    lines = [s for s in content.split("\n") if s.strip()]
+    text = lines[0] if lines else title
+    if text:
+        float_text(dt.game.player, text)
+    # 调用方打开前改过按钮（确认框的 instant 等），按关闭时的方式复位；没打开时 close 只做复位
+    try:
+        popup.close()
+    except Exception:
+        log_exc("复位弹窗", once=True)
+
+
+def patch_defaultpopup(module):
+    Popup = getattr(module, "DefaultPopup", None)
+    if Popup is None or getattr(Popup, "_ai_takeover_patched", False):
+        return
+    orig_open = Popup.open
+
+    def open(self, *args, **kwargs):
+        if STATE.acting:
+            try:
+                from data import dt
+                scene = getattr(dt, "scene", None)
+                if self is getattr(scene, "popup", None) and self not in scene.open_modals:
+                    swallow_popup(self)
+                    return None
+            except Exception:
+                log_exc("拦截弹窗", once=True)
+        return orig_open(self, *args, **kwargs)
+
+    Popup.open = open
+    Popup._ai_takeover_patched = True
+    log("托管期间的弹窗改为飘字")
+
+
+def patch_perkpopup(module):
+    Popup = getattr(module, "PerkPopup", None)
+    if Popup is None or getattr(Popup, "_ai_takeover_patched", False):
+        return
+    orig = Popup.set_and_open
+    STATE.orig_perk_open = orig
+
+    def set_and_open(self, char):
+        # 升级检查在单独的线程里，托管回合（含结束回合）期间弹出的话点不掉，等交还后再弹
+        if STATE.busy:
+            STATE.pending_perk = (self, char)
+            log("托管中升级，回合交还后再弹出技能选择")
+            return None
+        return orig(self, char)
+
+    Popup.set_and_open = set_and_open
+    Popup._ai_takeover_patched = True
+
+
+def flush_pending_perk(scene):
+    """主线程每帧调用：托管结束、轮到玩家且没有弹窗时，补弹升级选技能。"""
+    pending = STATE.pending_perk
+    if pending is None or STATE.busy:
+        return
+    if scene.turn != "player" or not scene.allow_player_input or scene.open_modals:
+        return
+    STATE.pending_perk = None
+    popup, char = pending
+    if getattr(popup, "char", None) or not char.can_level_up():
+        return
+    STATE.orig_perk_open(popup, char)
+
+
+def patch_book(module):
+    BookType2 = getattr(module, "BookType2", None)
+    if BookType2 is None or getattr(BookType2, "_ai_takeover_patched", False):
+        return
+    orig = BookType2.reread
+
+    def reread(self, char):
+        # 原版在玩家回合弹「再读一遍？」确认框且不重置进度，AI 接着会 0 AP 反复「读完」同一本书；
+        # 托管时与队友 AI 相同，直接从头重读
+        if STATE.acting:
+            char.book_pages[self] = 0
+            return None
+        return orig(self, char)
+
+    BookType2.reread = reread
+    BookType2._ai_takeover_patched = True
 
 
 # ----------------------------------------------------------------------------
@@ -410,8 +769,10 @@ def patch_actionpanel(module):
 
     def __init__(self, scene):
         STATE.busy = False
+        STATE.acting = False
         STATE.continuous = False
         STATE.ready_since = None
+        STATE.pending_perk = None
         orig_init(self, scene)
 
     def update(self):
@@ -428,6 +789,10 @@ def patch_actionpanel(module):
             log_exc("ActionPanel.update", once=True)
             return
         if getattr(self.scene, "action_panel", None) is self:
+            try:
+                flush_pending_perk(self.scene)
+            except Exception:
+                log_exc("flush_pending_perk", once=True)
             try:
                 tick_continuous(self.scene)
             except Exception:
@@ -478,6 +843,12 @@ def on_module_loaded(name, module):
         patch_actionpanel(module)
     elif name == "scenes.main":
         patch_mainscene(module)
+    elif name == "ui.popups.defaultpopup":
+        patch_defaultpopup(module)
+    elif name == "ui.popups.perkpopup":
+        patch_perkpopup(module)
+    elif name == "core.item.book":
+        patch_book(module)
 
 
 try:

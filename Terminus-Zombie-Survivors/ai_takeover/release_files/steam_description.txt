@@ -29,6 +29,7 @@
 
 [b]AI 行为设置[/b]打开的是游戏原生的队友自动化设置面板，只对主角生效：可以单独开关攻击、搜尸体、吃生肉/变质食物、喝脏水、睡觉、读书、种田、捡物品的价值/重量阈值等（面板顶部的总开关对主角无效）。
 持续托管时 HP 低于 35% 自动停止；弹出升级、对话等窗口时会暂停。
+托管期间的“工具碎裂”“读完书获得技能/属性”等提示改为在主角头顶飘字；升级选技能的窗口等托管回合结束后再弹。AI 若 40 秒没有任何进展会自动停止托管、交还操作，详情写进日志。
 
 [h2]更新 / 卸载[/h2]
 [list]
@@ -59,6 +60,7 @@ Workshop mods for this game can only contain data, so the game never runs this m
 [h2]Use[/h2]
 Left-click / F6: AI plays this turn. Shift+F6: continuous takeover; click or F6 again to stop. Right-click: menu incl. AI behavior settings (the game's companion automation panel, applied to your character).
 The AI never changes maps, drives or trades. Continuous mode stops below 35% HP.
+During an AI turn, notices such as "tool broke" or "perk/stat gained from a book" float above your character instead of opening popups; the level-up perk choice opens after the AI turn. If the AI makes no progress for 40 seconds it stops and hands control back.
 
 [h2]Update / uninstall[/h2]
 After a mod or game update, run install.bat again. To remove, run uninstall.bat, then unsubscribe (or verify game files in Steam and delete <game>\ai_takeover).
