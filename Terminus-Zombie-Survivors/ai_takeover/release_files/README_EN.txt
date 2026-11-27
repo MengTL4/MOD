@@ -22,6 +22,8 @@ A robot button appears in the action panel (bottom right):
   Shift+F6                continuous takeover (every turn)
   click / F6 while on     stop
   Right-click             menu: this turn / continuous / AI behavior settings
+  click / F6 / Esc while the AI is acting (the button shows a stop square)
+                          stop right away; the turn does not end, the remaining AP is yours
 The AI uses the companion logic: medicine, safe sleep, fighting zombies and hostile NPCs,
 vehicle repair, debris, searching and looting, crafting/upgrading, reading, music, mending,
 repairs, farming, eating and drinking. It never changes maps, drives or trades.
@@ -32,6 +34,10 @@ During an AI turn, notices such as "tool broke" or "perk/stat gained from a book
 your character instead of opening popups you could not click; the level-up perk choice opens
 after the AI turn. If the AI makes no progress for 40 seconds it stops and hands control back,
 writing thread stacks to ai_takeover.log.
+With a melee weapon the AI skips zombies behind an intact wire fence (they cannot reach you
+either) instead of walking up to the fence and pacing back and forth until it runs out of AP;
+when a route would climb a fence it takes a cheaper detour if there is one.
+Frames longer than 0.2 s during an AI turn are logged to ai_takeover.log for troubleshooting.
 
 AFTER A MOD OR GAME UPDATE
 Run install.bat again. If it reports a Python runtime mismatch, wait for a mod update.

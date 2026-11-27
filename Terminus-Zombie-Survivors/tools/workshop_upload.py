@@ -248,5 +248,8 @@ if __name__ == "__main__":
         sys.exit(__doc__)
     if sys.argv[2] == "--create":
         create_code_mod(sys.argv[1])
+    elif "--dry-run" in sys.argv[2:]:
+        # 写在说明后面也只连接、不上传
+        upload_code_mod(sys.argv[1], "--dry-run")
     else:
         upload_code_mod(sys.argv[1], sys.argv[2], public="--public" in sys.argv[3:])

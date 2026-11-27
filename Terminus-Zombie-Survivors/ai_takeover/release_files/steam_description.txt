@@ -22,6 +22,7 @@
 [tr][td]Shift + F6[/td][td]开启持续托管（每回合自动托管）[/td][/tr]
 [tr][td]持续托管中点按钮 / F6[/td][td]停止持续托管[/td][/tr]
 [tr][td]右键按钮[/td][td]菜单：托管本回合 / 持续托管 / AI 行为设置[/td][/tr]
+[tr][td]AI 行动中点按钮 / F6 / Esc[/td][td][b]立即停止托管[/b]（按钮变成方块停止图标）：本回合不结束，剩下的 AP 留给你手动操作[/td][/tr]
 [/table]
 
 [b]AI 会做的事[/b]（和队友 AI 完全相同的逻辑与优先级）：用药治疗 → 安全时睡觉 → 攻击僵尸/敌对 NPC → 修车 → 清理障碍 → 搜刮、捡有价值的物品 → 继续制作/升级 → 读书、听音乐 → 缝补、修理 → 种田 → 按需吃喝。
@@ -30,6 +31,7 @@
 [b]AI 行为设置[/b]打开的是游戏原生的队友自动化设置面板，只对主角生效：可以单独开关攻击、搜尸体、吃生肉/变质食物、喝脏水、睡觉、读书、种田、捡物品的价值/重量阈值等（面板顶部的总开关对主角无效）。
 持续托管时 HP 低于 35% 自动停止；弹出升级、对话等窗口时会暂停。
 托管期间的“工具碎裂”“读完书获得技能/属性”等提示改为在主角头顶飘字；升级选技能的窗口等托管回合结束后再弹。AI 若 40 秒没有任何进展会自动停止托管、交还操作，详情写进日志。
+用近战武器时，隔着完好铁丝网的僵尸会被跳过（它也过不来），不会再走到网边打不到、来回跑到没 AP；绕得过去的照常绕过去打，路线要翻网时改走更省 AP 的绕行路线。托管中画面卡了 0.2 秒以上会记进日志，遇到卡顿请附上 ai_takeover.log。
 
 [h2]更新 / 卸载[/h2]
 [list]
@@ -59,8 +61,10 @@ Workshop mods for this game can only contain data, so the game never runs this m
 
 [h2]Use[/h2]
 Left-click / F6: AI plays this turn. Shift+F6: continuous takeover; click or F6 again to stop. Right-click: menu incl. AI behavior settings (the game's companion automation panel, applied to your character).
+While the AI is acting the button turns into a stop square: click it, or press F6 / Esc, to stop right away. The turn does not end and the remaining AP is yours.
 The AI never changes maps, drives or trades. Continuous mode stops below 35% HP.
 During an AI turn, notices such as "tool broke" or "perk/stat gained from a book" float above your character instead of opening popups; the level-up perk choice opens after the AI turn. If the AI makes no progress for 40 seconds it stops and hands control back.
+With a melee weapon the AI skips zombies behind an intact wire fence instead of pacing back and forth at the fence until its AP runs out, and takes a cheaper detour when a route would climb a fence.
 
 [h2]Update / uninstall[/h2]
 After a mod or game update, run install.bat again. To remove, run uninstall.bat, then unsubscribe (or verify game files in Steam and delete <game>\ai_takeover).
